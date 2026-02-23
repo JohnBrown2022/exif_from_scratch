@@ -2,7 +2,11 @@ import { useMemo, useState } from 'react';
 import ui from './Panels.module.css';
 
 type Props = {
-  files: File[];
+  images: Array<{
+    id: string;
+    file: File;
+    url: string;
+  }>;
   selectedIndex: number;
   onSelect: (index: number) => void;
   onImport: () => void;
@@ -10,7 +14,7 @@ type Props = {
 };
 
 export default function ImageListPanel({
-  files,
+  images,
   selectedIndex,
   onSelect,
   onImport,
@@ -18,7 +22,7 @@ export default function ImageListPanel({
 }: Props) {
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const empty = files.length === 0;
+  const empty = images.length === 0;
 
   const description = useMemo(() => {
     if (empty) return '拖拽图片到这里，或点击右上角“导入图片”';
@@ -60,19 +64,25 @@ export default function ImageListPanel({
         <div className={ui.emptyState}>还没有导入图片</div>
       ) : (
         <ul className={ui.list}>
-          {files.map((file, index) => {
+          {images.map((image, index) => {
             const active = index === selectedIndex;
+            const file = image.file;
             return (
-              <li key={`${file.name}-${file.lastModified}-${index}`}>
+              <li key={image.id}>
                 <button
                   className={active ? ui.listItemActive : ui.listItem}
                   type="button"
                   onClick={() => onSelect(index)}
                   title={file.name}
                 >
-                  <div className={ui.listItemName}>{file.name}</div>
-                  <div className={ui.listItemMeta}>
-                    {(file.size / 1024 / 1024).toFixed(1)} MB
+                  <div className={ui.listItemRow}>
+                    <img className={ui.thumb} src={image.url} alt="" loading="lazy" />
+                    <div className={ui.listItemText}>
+                      <div className={ui.listItemName}>{file.name}</div>
+                      <div className={ui.listItemMeta}>
+                        {(file.size / 1024 / 1024).toFixed(1)} MB
+                      </div>
+                    </div>
                   </div>
                 </button>
               </li>
@@ -83,4 +93,3 @@ export default function ImageListPanel({
     </div>
   );
 }
-

@@ -94,6 +94,28 @@
   background: rgba(124, 92, 255, 0.14);
 }
 
+.listItemRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.2);
+  flex: 0 0 auto;
+}
+
+.listItemText {
+  min-width: 0;
+  flex: 1;
+}
+
 .listItemName {
   font-size: 13px;
   white-space: nowrap;
@@ -127,22 +149,39 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
-.previewOverlay {
-  position: absolute;
-  inset: 12px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  pointer-events: none;
-}
-
 .previewOverlayTag {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
   padding: 8px 10px;
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.18);
   font-size: 12px;
   color: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+}
+
+.previewOverlayError {
+  position: absolute;
+  left: 22px;
+  top: 22px;
+  max-width: min(420px, calc(100% - 44px));
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 77, 79, 0.12);
+  border: 1px solid rgba(255, 77, 79, 0.3);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+}
+
+.previewCanvas {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .form {
@@ -181,6 +220,15 @@
   width: 100%;
 }
 
+.colorInput {
+  width: 100%;
+  height: 42px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+}
+
 .primaryButton {
   padding: 12px 12px;
   border-radius: 12px;
@@ -190,12 +238,91 @@
   cursor: pointer;
 }
 
+.dangerButton {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 77, 79, 0.55);
+  background: rgba(255, 77, 79, 0.16);
+  color: var(--text);
+  cursor: pointer;
+}
+
 .primaryButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
+.buttonRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .hint {
   font-size: 12px;
   color: var(--muted);
+}
+
+.exifBox {
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.16);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.exifTitle {
+  font-size: 12px;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+
+.exifLine {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.86);
+  margin-top: 4px;
+  word-break: break-word;
+}
+
+.exifError {
+  font-size: 12px;
+  color: rgba(255, 77, 79, 0.95);
+  margin-top: 4px;
+}
+
+.errorList {
+  border: 1px solid var(--border);
+  background: rgba(255, 77, 79, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.errorItems {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.errorItem {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.errorName {
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.errorMessage {
+  font-size: 12px;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.78);
+  word-break: break-word;
 }

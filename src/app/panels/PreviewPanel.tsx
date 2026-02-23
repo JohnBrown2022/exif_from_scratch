@@ -1,44 +1,123 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ui from './Panels.module.css';
+import {
+  decodeImage,
+  getTemplateById,
+  readRotation,
+  renderWatermark,
+  type ExifData,
+  type ExportFormat,
+  type TemplateId,
+} from '../../core';
 
 type Props = {
   file: File | null;
+  templateId: TemplateId;
+  exif: ExifData | null;
+  exifError: string | null;
+  isReadingExif: boolean;
+  jpegBackground: string;
+  exportFormat: ExportFormat;
 };
 
-export default function PreviewPanel({ file }: Props) {
-  const [url, setUrl] = useState<string | null>(null);
+function getPreviewSize(width: number, height: number, maxEdge: number) {
+  const longest = Math.max(width, height);
+  if (longest <= maxEdge) return { width, height };
+  const scale = maxEdge / longest;
+  return { width: Math.round(width * scale), height: Math.round(height * scale) };
+}
+
+export default function PreviewPanel({
+  file,
+  templateId,
+  exif,
+  exifError,
+  isReadingExif,
+  jpegBackground,
+  exportFormat,
+}: Props) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [renderError, setRenderError] = useState<string | null>(null);
+  const [isRendering, setIsRendering] = useState(false);
+
+  const subtitle = useMemo(() => {
+    if (!file) return '选择一张图片开始';
+    if (isReadingExif) return '正在读取 EXIF…';
+    if (exifError) return `EXIF 读取失败：${exifError}`;
+    return 'Canvas 水印预览';
+  }, [exifError, file, isReadingExif]);
 
   useEffect(() => {
-    if (!file) {
-      setUrl(null);
-      return;
+    let cancelled = false;
+
+    async function run() {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      setRenderError(null);
+
+      if (!file) {
+        const ctx = canvas.getContext('2d');
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+      }
+
+      setIsRendering(true);
+      const [decoded, rotation] = await Promise.all([decodeImage(file), readRotation(file)]);
+
+      try {
+        if (cancelled) return;
+
+        const previewSize = getPreviewSize(decoded.width, decoded.height, 1200);
+        const template = getTemplateById(templateId);
+
+        renderWatermark({
+          canvas,
+          image: decoded.source,
+          imageWidth: decoded.width,
+          imageHeight: decoded.height,
+          outputWidth: previewSize.width,
+          outputHeight: previewSize.height,
+          exif: exif ?? {},
+          template,
+          background: exportFormat === 'jpeg' ? jpegBackground : undefined,
+          rotation,
+        });
+      } finally {
+        decoded.close();
+        if (!cancelled) setIsRendering(false);
+      }
     }
 
-    const nextUrl = URL.createObjectURL(file);
-    setUrl(nextUrl);
-    return () => URL.revokeObjectURL(nextUrl);
-  }, [file]);
+    run().catch((err) => {
+      if (cancelled) return;
+      setIsRendering(false);
+      setRenderError(err instanceof Error ? err.message : '预览渲染失败');
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [exif, exportFormat, file, jpegBackground, templateId]);
 
   return (
     <div className={ui.panelRoot}>
       <div className={ui.panelHeader}>
         <div>
           <div className={ui.panelTitle}>预览</div>
-          <div className={ui.panelSubtitle}>Canvas 渲染器将在 M2 接入</div>
+          <div className={ui.panelSubtitle}>{subtitle}</div>
         </div>
       </div>
 
-      {!url ? (
-        <div className={ui.emptyState}>选择一张图片开始</div>
-      ) : (
+      {!file ? <div className={ui.emptyState}>选择一张图片开始</div> : null}
+
+      {file ? (
         <div className={ui.previewFrame}>
-          <img className={ui.previewImage} src={url} alt="preview" />
-          <div className={ui.previewOverlay}>
-            <div className={ui.previewOverlayTag}>水印预览占位</div>
-          </div>
+          <canvas className={ui.previewCanvas} ref={canvasRef} />
+          {isRendering ? <div className={ui.previewOverlayTag}>渲染中…</div> : null}
+          {renderError ? <div className={ui.previewOverlayError}>{renderError}</div> : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
-
