@@ -6,6 +6,8 @@ export * from './exif/format';
 export * from './image/decodeImage';
 export * from './image/palette';
 
+export * from './brand/makerLogo';
+
 export * from './render/templates';
 export * from './render/renderer';
 

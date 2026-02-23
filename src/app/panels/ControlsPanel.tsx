@@ -1,6 +1,12 @@
+import { useRef, useState } from 'react';
 import ui from './Panels.module.css';
 import {
   buildWatermarkFields,
+  clearMakerLogoDataUrl,
+  getMakerLogoDataUrl,
+  inferMakerLogoKey,
+  rasterizeLogoFileToPngDataUrl,
+  setMakerLogoDataUrl,
   WATERMARK_TEMPLATES,
   type BatchUpdate,
   type ExifData,
@@ -32,6 +38,7 @@ type Props = {
   exif: ExifData | null;
   exifError: string | null;
   isReadingExif: boolean;
+  onMakerLogoChanged: () => void;
 };
 
 export default function ControlsPanel({
@@ -57,11 +64,19 @@ export default function ControlsPanel({
   exif,
   exifError,
   isReadingExif,
+  onMakerLogoChanged,
 }: Props) {
+  const makerLogoInputRef = useRef<HTMLInputElement | null>(null);
+  const [makerLogoError, setMakerLogoError] = useState<string | null>(null);
+
   const fields = exif ? buildWatermarkFields(exif) : null;
   const failedCount = batchState
     ? batchState.jobs.filter((job) => job.status === 'error').length
     : 0;
+
+  const makerKey = exif ? inferMakerLogoKey(exif) : null;
+  const makerLogoDataUrl = makerKey ? getMakerLogoDataUrl(makerKey) : null;
+  const hasMakerLogo = Boolean(makerLogoDataUrl);
 
   return (
     <div className={ui.panelRoot}>
@@ -198,6 +213,72 @@ export default function ControlsPanel({
             {fields?.date ? <div className={ui.exifLine}>{fields.date}</div> : null}
             {!fields?.camera && !fields?.lens && !fields?.settings && !fields?.date && !isReadingExif ? (
               <div className={ui.exifLine}>无可用 EXIF 字段（仍可导出）</div>
+            ) : null}
+
+            {makerKey ? (
+              <>
+                <div className={ui.exifTitle} style={{ marginTop: 12 }}>
+                  厂商 Logo（可选）
+                </div>
+                <div className={ui.exifLine}>
+                  Key：{makerKey}（{hasMakerLogo ? '已设置' : '未设置'}）
+                </div>
+                <div className={ui.buttonRow} style={{ marginTop: 10 }}>
+                  <button
+                    className={ui.ghostButton}
+                    type="button"
+                    onClick={() => makerLogoInputRef.current?.click()}
+                    disabled={isExporting}
+                  >
+                    上传 Logo
+                  </button>
+                  <button
+                    className={ui.ghostButton}
+                    type="button"
+                    onClick={() => {
+                      try {
+                        clearMakerLogoDataUrl(makerKey);
+                        setMakerLogoError(null);
+                        onMakerLogoChanged();
+                      } catch (err) {
+                        setMakerLogoError(err instanceof Error ? err.message : 'Logo 清除失败');
+                      }
+                    }}
+                    disabled={!hasMakerLogo || isExporting}
+                  >
+                    清除
+                  </button>
+                </div>
+                <input
+                  ref={makerLogoInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    event.target.value = '';
+                    if (!file) return;
+
+                    setMakerLogoError(null);
+                    rasterizeLogoFileToPngDataUrl(file)
+                      .then((dataUrl) => {
+                        try {
+                          setMakerLogoDataUrl(makerKey, dataUrl);
+                          onMakerLogoChanged();
+                        } catch (err) {
+                          setMakerLogoError(err instanceof Error ? err.message : 'Logo 保存失败');
+                        }
+                      })
+                      .catch((err) => {
+                        setMakerLogoError(err instanceof Error ? err.message : 'Logo 处理失败');
+                      });
+                  }}
+                />
+                {makerLogoError ? <div className={ui.exifError}>Logo 失败：{makerLogoError}</div> : null}
+                <div className={ui.hint} style={{ marginTop: 8 }}>
+                  Logo 仅保存在浏览器本地，不会上传/不会进 git；素材版权/商标请自行确认。
+                </div>
+              </>
             ) : null}
           </div>
         ) : null}

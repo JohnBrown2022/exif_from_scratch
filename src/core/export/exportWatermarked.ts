@@ -1,6 +1,7 @@
 import type { ExifData } from '../exif/types';
 import { readExif } from '../exif/readExif';
 import { readRotation } from '../exif/readRotation';
+import { inferMakerLogoKey, loadMakerLogo } from '../brand/makerLogo';
 import { decodeImage } from '../image/decodeImage';
 import { renderWatermark } from '../render/renderer';
 import { getTemplateById, type TemplateId } from '../render/templates';
@@ -52,6 +53,9 @@ export async function exportWatermarkedImage(
   ]);
 
   try {
+    const makerKey = inferMakerLogoKey(exifResult.exif);
+    const makerLogo = makerKey ? await loadMakerLogo(makerKey) : null;
+
     const orientedWidth =
       rotation?.canvas && rotation.dimensionSwapped ? decoded.height : decoded.width;
     const orientedHeight =
@@ -76,6 +80,7 @@ export async function exportWatermarkedImage(
       template,
       background,
       rotation,
+      makerLogo,
     });
 
     const blob = await canvasToBlob(canvas, mime, quality);

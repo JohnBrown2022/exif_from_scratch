@@ -3,6 +3,8 @@ import ui from './Panels.module.css';
 import {
   decodeImage,
   getTemplateById,
+  inferMakerLogoKey,
+  loadMakerLogo,
   readRotation,
   renderWatermark,
   type ExifData,
@@ -18,6 +20,7 @@ type Props = {
   isReadingExif: boolean;
   jpegBackground: string;
   exportFormat: ExportFormat;
+  makerLogoRevision?: number;
 };
 
 function getPreviewSize(width: number, height: number, maxEdge: number) {
@@ -35,6 +38,7 @@ export default function PreviewPanel({
   isReadingExif,
   jpegBackground,
   exportFormat,
+  makerLogoRevision,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -68,6 +72,10 @@ export default function PreviewPanel({
       try {
         if (cancelled) return;
 
+        const makerKey = exif ? inferMakerLogoKey(exif) : null;
+        const makerLogo = makerKey ? await loadMakerLogo(makerKey) : null;
+        if (cancelled) return;
+
         const orientedWidth =
           rotation?.canvas && rotation.dimensionSwapped ? decoded.height : decoded.width;
         const orientedHeight =
@@ -87,6 +95,7 @@ export default function PreviewPanel({
           template,
           background: exportFormat === 'jpeg' ? jpegBackground : undefined,
           rotation,
+          makerLogo,
         });
       } finally {
         decoded.close();
@@ -103,7 +112,7 @@ export default function PreviewPanel({
     return () => {
       cancelled = true;
     };
-  }, [exif, exportFormat, file, jpegBackground, templateId]);
+  }, [exif, exportFormat, file, jpegBackground, templateId, makerLogoRevision]);
 
   return (
     <div className={ui.panelRoot}>

@@ -1,4 +1,5 @@
 import { clamp } from '../utils/clamp';
+import type { MakerLogo } from '../brand/makerLogo';
 import type { ExifData } from '../exif/types';
 import {
   buildWatermarkFields,
@@ -58,6 +59,7 @@ export type TemplateRenderInput = {
   exif: ExifData;
   imageRect: Rect;
   palette?: string[];
+  makerLogo?: MakerLogo | null;
 };
 
 function getLines(exif: ExifData): string[] {
@@ -134,6 +136,39 @@ function drawFooterDivider(ctx: CanvasRenderingContext2D, x: number, y: number, 
   ctx.restore();
 }
 
+function drawMakerLogo(
+  ctx: CanvasRenderingContext2D,
+  logo: MakerLogo,
+  anchorX: number,
+  anchorY: number,
+  maxWidth: number,
+  maxHeight: number,
+  options?: {
+    align?: 'left' | 'center' | 'right';
+    valign?: 'top' | 'middle' | 'bottom';
+    opacity?: number;
+  },
+): { width: number; height: number } {
+  const scale = Math.min(maxWidth / logo.width, maxHeight / logo.height, 1);
+  const width = Math.max(1, Math.round(logo.width * scale));
+  const height = Math.max(1, Math.round(logo.height * scale));
+
+  let x = anchorX;
+  if (options?.align === 'center') x -= width / 2;
+  if (options?.align === 'right') x -= width;
+
+  let y = anchorY;
+  if (options?.valign === 'middle') y -= height / 2;
+  if (options?.valign === 'bottom') y -= height;
+
+  ctx.save();
+  if (typeof options?.opacity === 'number') ctx.globalAlpha *= clamp(options.opacity, 0, 1);
+  ctx.drawImage(logo.source, Math.round(x), Math.round(y), width, height);
+  ctx.restore();
+
+  return { width, height };
+}
+
 const classicFooter: WatermarkTemplate = {
   id: 'classic_footer',
   name: '经典白底栏',
@@ -149,7 +184,7 @@ const classicFooter: WatermarkTemplate = {
     };
   },
   render: (ctx, input) => {
-    const { width, height, exif, imageRect } = input;
+    const { width, height, exif, imageRect, makerLogo } = input;
     const footerY = imageRect.y + imageRect.height;
     const footerHeight = height - footerY;
     const scale = getFooterScale(width);
@@ -195,11 +230,20 @@ const classicFooter: WatermarkTemplate = {
     ctx.fillText(fitText(ctx, rightText, rightMax), width - padding, rightTop);
 
     // Center brand marker (only if there is space)
-    const centerTop = footerY + Math.round((footerHeight - metaSize) / 2);
-    ctx.textAlign = 'center';
-    setFont(ctx, 700, clamp(12 * scale, 10, 14));
-    ctx.fillStyle = 'rgba(20,20,22,0.46)';
-    ctx.fillText(make, width / 2, centerTop + 1);
+    const centerY = footerY + footerHeight / 2;
+    if (makerLogo) {
+      drawMakerLogo(ctx, makerLogo, width / 2, centerY, Math.round(width * 0.18), Math.round(footerHeight * 0.38), {
+        align: 'center',
+        valign: 'middle',
+        opacity: 0.55,
+      });
+    } else {
+      const centerTop = footerY + Math.round((footerHeight - metaSize) / 2);
+      ctx.textAlign = 'center';
+      setFont(ctx, 700, clamp(12 * scale, 10, 14));
+      ctx.fillStyle = 'rgba(20,20,22,0.46)';
+      ctx.fillText(make, width / 2, centerTop + 1);
+    }
 
     ctx.restore();
   },
@@ -245,7 +289,7 @@ const ezmarkCard: WatermarkTemplate = {
     ctx.restore();
   },
   render: (ctx, input) => {
-    const { exif, imageRect, height, palette } = input;
+    const { exif, imageRect, height, palette, makerLogo } = input;
     const footerY = imageRect.y + imageRect.height;
     const footerHeight = height - footerY - imageRect.y;
     const scale = clamp(imageRect.width / 900, 0.75, 1.15);
@@ -285,13 +329,27 @@ const ezmarkCard: WatermarkTemplate = {
     const settingsText = parts.length ? parts.join('  ') : '—';
 
     // Make label (acts as logo)
-    if (make) {
+    let labelWidth = 0;
+    if (makerLogo) {
+      const drawn = drawMakerLogo(
+        ctx,
+        makerLogo,
+        rightX,
+        baseTop + Math.round(2 * scale),
+        Math.round(140 * scale),
+        Math.round(22 * scale),
+        { align: 'right', valign: 'top', opacity: 0.82 },
+      );
+      labelWidth = drawn.width;
+    } else if (make) {
       setFont(ctx, 800, clamp(12 * scale, 10, 14));
       ctx.fillStyle = 'rgba(0,0,0,0.72)';
       ctx.textAlign = 'right';
       ctx.fillText(make, rightX, baseTop + 1);
+      labelWidth = ctx.measureText(make).width;
+    }
 
-      const labelWidth = ctx.measureText(make).width;
+    if (labelWidth > 0) {
       drawFooterDivider(ctx, Math.round(rightX - labelWidth - 10 * scale), baseTop - 2, Math.round(44 * scale));
     }
 
@@ -340,7 +398,7 @@ const picsealBanner: WatermarkTemplate = {
     };
   },
   render: (ctx, input) => {
-    const { exif, imageRect, width, height } = input;
+    const { exif, imageRect, width, height, makerLogo } = input;
     const footerY = imageRect.y + imageRect.height;
     const footerHeight = height - footerY;
     const scale = clamp(width / 1000, 0.75, 1.15);
@@ -392,11 +450,21 @@ const picsealBanner: WatermarkTemplate = {
     ctx.fillText(fitText(ctx, settings || '—', width * 0.36), rightX, footerY + padding + Math.round(titleSize + 6 * scale));
 
     // Brand marker at far right
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    setFont(ctx, 900, clamp(22 * scale, 18, 28));
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.fillText(make, width - padding, footerY + footerHeight / 2);
+    const brandX = width - padding;
+    const brandY = footerY + footerHeight / 2;
+    if (makerLogo) {
+      drawMakerLogo(ctx, makerLogo, brandX, brandY, Math.round(width * 0.2), Math.round(footerHeight * 0.62), {
+        align: 'right',
+        valign: 'middle',
+        opacity: 0.26,
+      });
+    } else {
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      setFont(ctx, 900, clamp(22 * scale, 18, 28));
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.fillText(make, brandX, brandY);
+    }
 
     ctx.restore();
   },

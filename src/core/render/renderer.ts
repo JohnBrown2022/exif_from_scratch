@@ -1,6 +1,7 @@
 import type { ExifData } from '../exif/types';
 import type { CanvasRotation } from '../exif/readRotation';
 import { extractPaletteFromCanvasArea } from '../image/palette';
+import type { MakerLogo } from '../brand/makerLogo';
 import { roundRectPath } from './draw';
 import type { ImageDrawMode, Rect, TemplateLayout, WatermarkTemplate } from './templates';
 
@@ -91,6 +92,7 @@ export type RenderRequest = {
   template: WatermarkTemplate;
   background?: string;
   rotation?: CanvasRotation | null;
+  makerLogo?: MakerLogo | null;
 };
 
 export function renderWatermark({
@@ -104,6 +106,7 @@ export function renderWatermark({
   template,
   background,
   rotation,
+  makerLogo,
 }: RenderRequest) {
   const baseWidth = Math.max(1, Math.round(outputWidth));
   const baseHeight = Math.max(1, Math.round(outputHeight));
@@ -132,6 +135,7 @@ export function renderWatermark({
     height: canvas.height,
     exif,
     imageRect,
+    makerLogo,
   } as const;
 
   template.renderBackdrop?.(ctx, renderInputBase);
