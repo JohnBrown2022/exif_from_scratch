@@ -1,6 +1,7 @@
 import ui from './Panels.module.css';
 import {
   buildWatermarkFields,
+  clearElementOverride,
   getBuiltinTemplateJson,
   loadTemplateOverride,
   normalizeHexColor,
@@ -10,43 +11,31 @@ import {
   type BatchUpdate,
   type ElementSpec,
   type ExifData,
-  type MakerLogoElement,
+  type GridOverride,
   type TemplateId,
-  type TextElement,
 } from '../../core';
 
 export type ExportFormat = 'png' | 'jpeg';
 
-type EditableItem =
-  | { type: 'text'; el: TextElement }
-  | { type: 'maker_logo'; el: MakerLogoElement };
+type FlatElement = { el: ElementSpec; depth: number };
 
-function collectEditableItems(elements: ElementSpec[]): EditableItem[] {
-  const items: EditableItem[] = [];
+function flattenElements(elements: ElementSpec[], depth = 0): FlatElement[] {
+  const out: FlatElement[] = [];
+  for (const el of elements) {
+    out.push({ el, depth });
+    if (el.type === 'stack') out.push(...flattenElements(el.children, depth + 1));
+  }
+  return out;
+}
 
-  const walk = (els: ElementSpec[]) => {
-    for (const el of els) {
-      if (el.type === 'stack') {
-        walk(el.children);
-        continue;
-      }
+function clampInt(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, Math.trunc(value)));
+}
 
-      if (el.type === 'text' && (el.editable?.visible || el.editable?.text)) {
-        items.push({ type: 'text', el });
-        continue;
-      }
-
-      if (
-        el.type === 'maker_logo' &&
-        (el.editable?.visible || el.editable?.logoStyle || el.editable?.monoColor)
-      ) {
-        items.push({ type: 'maker_logo', el });
-      }
-    }
-  };
-
-  walk(elements);
-  return items;
+function getElementLabel(el: ElementSpec): string {
+  if (el.type === 'text' || el.type === 'maker_logo') return el.label ?? el.id;
+  return el.id;
 }
 
 type Props = {
@@ -107,8 +96,23 @@ export default function ControlsPanel({
 
   const templateJson = getBuiltinTemplateJson(templateId);
   const override = loadTemplateOverride(templateId);
-  const editableItems = templateJson ? collectEditableItems(templateJson.elements) : [];
   const elementOverrides = override?.elements ?? {};
+  const isCustomedTemplate = templateId === 'customed';
+  const flatElements = templateJson ? flattenElements(templateJson.elements) : [];
+  const level1Elements = isCustomedTemplate
+    ? flatElements
+    : flatElements.filter(({ el }) => {
+        if (el.type === 'text') return Boolean(el.editable?.visible || el.editable?.text);
+        if (el.type === 'maker_logo') return Boolean(el.editable?.visible || el.editable?.logoStyle || el.editable?.monoColor);
+        return false;
+      });
+  const layoutElements = templateJson
+    ? isCustomedTemplate
+      ? templateJson.elements
+      : templateJson.elements.filter(
+          (el) => el.type === 'text' || el.type === 'maker_logo' || el.type === 'stack',
+        )
+    : [];
 
   return (
     <div className={ui.panelRoot}>
@@ -135,71 +139,40 @@ export default function ControlsPanel({
           </select>
         </label>
 
-        {templateJson && editableItems.length ? (
+        {templateJson && level1Elements.length ? (
           <div className={ui.exifBox}>
-            <div className={ui.exifTitle}>模板编辑（Level 1）</div>
+            <div className={ui.exifTitle}>{isCustomedTemplate ? '自定义（Customed）' : '模板编辑（Level 1）'}</div>
             <div className={ui.hint}>这些设置保存在浏览器本地（localStorage）。</div>
 
-            {editableItems.map((item) => {
-              if (item.type === 'text') {
-                const el = item.el;
-                const ov = elementOverrides[el.id] ?? {};
-                const canToggle = Boolean(el.editable?.visible);
-                const canEditText = Boolean(el.editable?.text && el.bind.kind === 'literal');
-                const defaultText = el.bind.kind === 'literal' ? el.bind.value : '';
-                const currentText = typeof ov.text === 'string' ? ov.text : defaultText;
-
-                return (
-                  <div key={el.id} className={ui.field}>
-                    <div className={ui.label}>{el.label ?? el.id}</div>
-                    {canToggle ? (
-                      <label className={ui.checkboxRow}>
-                        <input
-                          type="checkbox"
-                          checked={ov.visible !== false}
-                          onChange={(e) => {
-                            setElementOverride(templateId, el.id, {
-                              visible: e.target.checked ? undefined : false,
-                            });
-                            onTemplateOverridesChange();
-                          }}
-                        />
-                        <span>显示</span>
-                      </label>
-                    ) : null}
-
-                    {canEditText ? (
-                      <input
-                        className={ui.select}
-                        type="text"
-                        value={currentText}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setElementOverride(templateId, el.id, {
-                            text: next === defaultText ? undefined : next,
-                          });
-                          onTemplateOverridesChange();
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                );
-              }
-
-              const el = item.el;
+            {level1Elements.map(({ el, depth }) => {
               const ov = elementOverrides[el.id] ?? {};
-              const canToggle = Boolean(el.editable?.visible);
-              const canStyle = Boolean(el.editable?.logoStyle);
-              const canMonoColor = Boolean(el.editable?.monoColor);
+              const prefix = depth > 0 ? '↳ '.repeat(depth) : '';
+              const label = `${prefix}${getElementLabel(el)}`;
 
-              const defaultStyle = el.style.style ?? 'color';
+              const canToggle =
+                isCustomedTemplate ||
+                (el.type === 'text' && Boolean(el.editable?.visible)) ||
+                (el.type === 'maker_logo' && Boolean(el.editable?.visible));
+
+              const canEditText =
+                el.type === 'text' &&
+                (isCustomedTemplate || Boolean(el.editable?.text)) &&
+                el.bind.kind === 'literal';
+
+              const defaultText = canEditText && el.bind.kind === 'literal' ? el.bind.value : '';
+              const currentText = typeof ov.text === 'string' ? ov.text : defaultText;
+
+              const canStyle = el.type === 'maker_logo' && (isCustomedTemplate || Boolean(el.editable?.logoStyle));
+              const canMonoColor = el.type === 'maker_logo' && (isCustomedTemplate || Boolean(el.editable?.monoColor));
+              const defaultStyle = el.type === 'maker_logo' ? el.style.style ?? 'color' : 'color';
               const currentStyle = (ov.logoStyle ?? defaultStyle) as 'color' | 'mono';
-              const defaultMonoColor = normalizeHexColor(el.style.monoColor, '#FFFFFF');
+              const defaultMonoColor =
+                el.type === 'maker_logo' ? normalizeHexColor(el.style.monoColor, '#FFFFFF') : '#FFFFFF';
               const currentMonoColor = normalizeHexColor(ov.monoColor, defaultMonoColor);
 
               return (
                 <div key={el.id} className={ui.field}>
-                  <div className={ui.label}>{el.label ?? el.id}</div>
+                  <div className={ui.label}>{label}</div>
 
                   {canToggle ? (
                     <label className={ui.checkboxRow}>
@@ -207,9 +180,7 @@ export default function ControlsPanel({
                         type="checkbox"
                         checked={ov.visible !== false}
                         onChange={(e) => {
-                          setElementOverride(templateId, el.id, {
-                            visible: e.target.checked ? undefined : false,
-                          });
+                          setElementOverride(templateId, el.id, { visible: e.target.checked ? undefined : false });
                           onTemplateOverridesChange();
                         }}
                       />
@@ -217,7 +188,22 @@ export default function ControlsPanel({
                     </label>
                   ) : null}
 
-                  {canStyle ? (
+                  {canEditText ? (
+                    <input
+                      className={ui.select}
+                      type="text"
+                      value={currentText}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setElementOverride(templateId, el.id, {
+                          text: next === defaultText ? undefined : next,
+                        });
+                        onTemplateOverridesChange();
+                      }}
+                    />
+                  ) : null}
+
+                  {el.type === 'maker_logo' && canStyle ? (
                     <label className={ui.field}>
                       <div className={ui.label}>风格</div>
                       <select
@@ -237,7 +223,7 @@ export default function ControlsPanel({
                     </label>
                   ) : null}
 
-                  {currentStyle === 'mono' && canMonoColor ? (
+                  {el.type === 'maker_logo' && currentStyle === 'mono' && canMonoColor ? (
                     <label className={ui.field}>
                       <div className={ui.label}>单色颜色</div>
                       <input
@@ -270,6 +256,172 @@ export default function ControlsPanel({
                 重置模板设置
               </button>
             </div>
+          </div>
+        ) : null}
+
+        {templateJson && layoutElements.length ? (
+          <div className={ui.exifBox}>
+            <div className={ui.exifTitle}>模板布局（Level 2）</div>
+            <div className={ui.hint}>编辑元素网格位置（col/row/跨度）与对齐方式。</div>
+
+            {layoutElements.map((el) => {
+              const ov = elementOverrides[el.id] ?? {};
+              const zoneGrid = templateJson.zones?.[el.zone]?.grid;
+              const cols = clampInt(zoneGrid?.cols ?? 12, 1, 48);
+              const rows = clampInt(zoneGrid?.rows ?? 12, 1, 48);
+
+              const defaultGrid: GridOverride = el.grid ?? { col: 1, colSpan: cols, row: 1, rowSpan: rows };
+              const currentGrid: GridOverride = ov.grid ?? defaultGrid;
+
+              const defaultAlign =
+                el.type === 'text'
+                  ? el.style.align ?? 'left'
+                  : el.type === 'maker_logo'
+                    ? el.style.align ?? 'left'
+                    : el.type === 'stack'
+                      ? el.align ?? 'left'
+                      : 'left';
+              const defaultVAlign =
+                el.type === 'text'
+                  ? el.style.vAlign ?? 'top'
+                  : el.type === 'maker_logo'
+                    ? el.style.vAlign ?? 'top'
+                    : el.type === 'stack'
+                      ? el.vAlign ?? 'top'
+                      : 'top';
+
+              const currentAlign = (ov.align ?? defaultAlign) as 'left' | 'center' | 'right';
+              const currentVAlign = (ov.vAlign ?? defaultVAlign) as 'top' | 'middle' | 'bottom';
+
+              const label = `${getElementLabel(el)} · ${el.type}`;
+
+              const colMax = cols;
+              const rowMax = rows;
+              const colSpanMax = Math.max(1, cols - currentGrid.col + 1);
+              const rowSpanMax = Math.max(1, rows - currentGrid.row + 1);
+
+              return (
+                <div key={el.id} className={ui.field}>
+                  <div className={ui.label}>{label}</div>
+
+                  <div className={ui.gridControls}>
+                    <label className={ui.field}>
+                      <div className={ui.label}>col</div>
+                      <input
+                        className={ui.select}
+                        type="number"
+                        min={1}
+                        max={colMax}
+                        value={currentGrid.col}
+                        onChange={(e) => {
+                          const col = clampInt(Number(e.target.value), 1, cols);
+                          const colSpan = clampInt(currentGrid.colSpan, 1, Math.max(1, cols - col + 1));
+                          setElementOverride(templateId, el.id, { grid: { ...currentGrid, col, colSpan } });
+                          onTemplateOverridesChange();
+                        }}
+                      />
+                    </label>
+                    <label className={ui.field}>
+                      <div className={ui.label}>colSpan</div>
+                      <input
+                        className={ui.select}
+                        type="number"
+                        min={1}
+                        max={colSpanMax}
+                        value={currentGrid.colSpan}
+                        onChange={(e) => {
+                          const colSpan = clampInt(Number(e.target.value), 1, Math.max(1, cols - currentGrid.col + 1));
+                          setElementOverride(templateId, el.id, { grid: { ...currentGrid, colSpan } });
+                          onTemplateOverridesChange();
+                        }}
+                      />
+                    </label>
+                    <label className={ui.field}>
+                      <div className={ui.label}>row</div>
+                      <input
+                        className={ui.select}
+                        type="number"
+                        min={1}
+                        max={rowMax}
+                        value={currentGrid.row}
+                        onChange={(e) => {
+                          const row = clampInt(Number(e.target.value), 1, rows);
+                          const rowSpan = clampInt(currentGrid.rowSpan, 1, Math.max(1, rows - row + 1));
+                          setElementOverride(templateId, el.id, { grid: { ...currentGrid, row, rowSpan } });
+                          onTemplateOverridesChange();
+                        }}
+                      />
+                    </label>
+                    <label className={ui.field}>
+                      <div className={ui.label}>rowSpan</div>
+                      <input
+                        className={ui.select}
+                        type="number"
+                        min={1}
+                        max={rowSpanMax}
+                        value={currentGrid.rowSpan}
+                        onChange={(e) => {
+                          const rowSpan = clampInt(Number(e.target.value), 1, Math.max(1, rows - currentGrid.row + 1));
+                          setElementOverride(templateId, el.id, { grid: { ...currentGrid, rowSpan } });
+                          onTemplateOverridesChange();
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {el.type === 'text' || el.type === 'maker_logo' || el.type === 'stack' ? (
+                    <div className={ui.gridControls}>
+                      <label className={ui.field}>
+                        <div className={ui.label}>align</div>
+                        <select
+                          className={ui.select}
+                          value={currentAlign}
+                          onChange={(e) => {
+                            const next = e.target.value as 'left' | 'center' | 'right';
+                            setElementOverride(templateId, el.id, { align: next === defaultAlign ? undefined : next });
+                            onTemplateOverridesChange();
+                          }}
+                        >
+                          <option value="left">left</option>
+                          <option value="center">center</option>
+                          <option value="right">right</option>
+                        </select>
+                      </label>
+                      <label className={ui.field}>
+                        <div className={ui.label}>vAlign</div>
+                        <select
+                          className={ui.select}
+                          value={currentVAlign}
+                          onChange={(e) => {
+                            const next = e.target.value as 'top' | 'middle' | 'bottom';
+                            setElementOverride(templateId, el.id, { vAlign: next === defaultVAlign ? undefined : next });
+                            onTemplateOverridesChange();
+                          }}
+                        >
+                          <option value="top">top</option>
+                          <option value="middle">middle</option>
+                          <option value="bottom">bottom</option>
+                        </select>
+                      </label>
+                    </div>
+                  ) : null}
+
+                  <div className={ui.buttonRow}>
+                    <button
+                      className={ui.ghostButton}
+                      type="button"
+                      onClick={() => {
+                        clearElementOverride(templateId, el.id);
+                        onTemplateOverridesChange();
+                      }}
+                    >
+                      重置该元素
+                    </button>
+                    <div className={ui.hint}>zone: {el.zone}</div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : null}
 

@@ -1,7 +1,17 @@
 import { clamp } from '../../utils/clamp';
 
+export type GridOverride = {
+  col: number;
+  colSpan: number;
+  row: number;
+  rowSpan: number;
+};
+
 export type ElementOverride = {
   visible?: boolean;
+  grid?: GridOverride;
+  align?: 'left' | 'center' | 'right';
+  vAlign?: 'top' | 'middle' | 'bottom';
   logoStyle?: 'color' | 'mono';
   monoColor?: string;
   text?: string;
@@ -51,7 +61,15 @@ export function setElementOverride(
   const prev = elements[elementId] ?? {};
   const next: ElementOverride = { ...prev, ...patch };
 
+  if (typeof patch.grid !== 'undefined') {
+    if (patch.grid) next.grid = { ...(prev.grid ?? ({} as GridOverride)), ...patch.grid };
+    else next.grid = undefined;
+  }
+
   if (next.visible !== false) delete next.visible;
+  if (typeof next.grid === 'undefined') delete next.grid;
+  if (typeof next.align === 'undefined') delete next.align;
+  if (typeof next.vAlign === 'undefined') delete next.vAlign;
   if (typeof next.logoStyle === 'undefined') delete next.logoStyle;
   if (typeof next.monoColor === 'undefined') delete next.monoColor;
   if (typeof next.text === 'undefined') delete next.text;
@@ -67,6 +85,18 @@ export function setElementOverride(
     return;
   }
 
+  saveTemplateOverride(templateId, { ...current, elements });
+}
+
+export function clearElementOverride(templateId: string, elementId: string) {
+  const current = loadTemplateOverride(templateId);
+  if (!current?.elements?.[elementId]) return;
+  const elements = { ...current.elements };
+  delete elements[elementId];
+  if (Object.keys(elements).length === 0) {
+    saveTemplateOverride(templateId, null);
+    return;
+  }
   saveTemplateOverride(templateId, { ...current, elements });
 }
 

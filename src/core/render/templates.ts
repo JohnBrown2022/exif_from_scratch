@@ -6,6 +6,7 @@ import { createWatermarkTemplateFromDefinition } from './engine/wrapTemplate';
 
 export type TemplateId =
   | 'classic_footer'
+  | 'customed'
   | 'ezmark_card'
   | 'picseal_banner'
   | 'lightroom_footer'
@@ -61,6 +62,7 @@ function builtin(id: TemplateId): WatermarkTemplate {
 
 export const WATERMARK_TEMPLATES: WatermarkTemplate[] = [
   builtin('classic_footer'),
+  builtin('customed'),
   builtin('ezmark_card'),
   builtin('picseal_banner'),
   builtin('lightroom_footer'),
@@ -77,4 +79,3 @@ export function getTemplateById(id: TemplateId): WatermarkTemplate {
   const found = WATERMARK_TEMPLATES.find((template) => template.id === id);
   return found ?? WATERMARK_TEMPLATES[0]!;
 }
-

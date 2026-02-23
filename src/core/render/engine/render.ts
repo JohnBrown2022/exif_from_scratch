@@ -88,45 +88,95 @@ function isElementVisible(el: ElementSpec, ctx: EngineContext): boolean {
 
 type OverrideMap = Record<string, ElementOverride>;
 
-function applyOverridesToElement(el: ElementSpec, overrides: OverrideMap): ElementSpec | null {
+function applyOverridesToElement(
+  el: ElementSpec,
+  overrides: OverrideMap,
+  options?: { allowAll?: boolean },
+): ElementSpec | null {
   const ov = overrides[el.id];
 
   if (ov?.visible === false) {
     const canHide =
-      (el.type === 'text' && el.editable?.visible) || (el.type === 'maker_logo' && el.editable?.visible);
+      options?.allowAll ||
+      (el.type === 'text' && el.editable?.visible) ||
+      (el.type === 'maker_logo' && el.editable?.visible);
     if (canHide) return null;
   }
 
-  if (el.type === 'text' && ov && el.editable?.text && el.bind.kind === 'literal' && typeof ov.text === 'string') {
-    const nextBind = { ...el.bind, value: ov.text } satisfies TextElement['bind'];
-    return { ...el, bind: nextBind };
+  let next: ElementSpec = el;
+
+  if (ov?.grid) {
+    next = { ...next, grid: ov.grid };
   }
 
-  if (el.type === 'maker_logo' && ov) {
-    const nextStyle: LogoStyle = { ...el.style };
-    if (ov.logoStyle && el.editable?.logoStyle) nextStyle.style = ov.logoStyle;
-    if (ov.monoColor && el.editable?.monoColor) nextStyle.monoColor = normalizeHexColor(ov.monoColor, '#FFFFFF');
-    return { ...el, style: nextStyle };
+  if (ov?.align || ov?.vAlign) {
+    if (next.type === 'text') {
+      next = {
+        ...next,
+        style: {
+          ...next.style,
+          align: ov.align ?? next.style.align,
+          vAlign: ov.vAlign ?? next.style.vAlign,
+        },
+      };
+    } else if (next.type === 'maker_logo') {
+      next = {
+        ...next,
+        style: {
+          ...next.style,
+          align: ov.align ?? next.style.align,
+          vAlign: ov.vAlign ?? next.style.vAlign,
+        },
+      };
+    } else if (next.type === 'stack') {
+      next = {
+        ...next,
+        align: ov.align ?? next.align,
+        vAlign: ov.vAlign ?? next.vAlign,
+      };
+    }
   }
 
-  if (el.type === 'stack') {
-    const children = el.children
-      .map((child) => applyOverridesToElement(child, overrides))
+  if (next.type === 'text' && ov) {
+    const allowTextOverride = options?.allowAll || next.editable?.text;
+    if (allowTextOverride && next.bind.kind === 'literal' && typeof ov.text === 'string') {
+      const nextBind = { ...next.bind, value: ov.text } satisfies TextElement['bind'];
+      next = { ...next, bind: nextBind };
+    }
+  }
+
+  if (next.type === 'maker_logo' && ov) {
+    const nextStyle: LogoStyle = { ...next.style };
+    const allowLogoStyleOverride = options?.allowAll || next.editable?.logoStyle;
+    const allowMonoColorOverride = options?.allowAll || next.editable?.monoColor;
+
+    if (ov.logoStyle && allowLogoStyleOverride) nextStyle.style = ov.logoStyle;
+    if (ov.monoColor && allowMonoColorOverride) nextStyle.monoColor = normalizeHexColor(ov.monoColor, '#FFFFFF');
+    next = { ...next, style: nextStyle };
+  }
+
+  if (next.type === 'stack') {
+    const children = next.children
+      .map((child) => applyOverridesToElement(child, overrides, options))
       .filter((child): child is ElementSpec => Boolean(child));
-    return { ...el, children };
+    next = { ...next, children };
   }
 
-  return el;
+  return next;
 }
 
-function isMakerLogoSuppressed(elements: ElementSpec[], overrides: OverrideMap): boolean {
+function isMakerLogoSuppressed(
+  elements: ElementSpec[],
+  overrides: OverrideMap,
+  options?: { allowAll?: boolean },
+): boolean {
   for (const el of elements) {
     if (el.type === 'maker_logo') {
       const ov = overrides[el.id];
-      if (el.editable?.visible && ov?.visible === false) return true;
+      if (ov?.visible === false && (options?.allowAll || el.editable?.visible)) return true;
       continue;
     }
-    if (el.type === 'stack' && isMakerLogoSuppressed(el.children, overrides)) return true;
+    if (el.type === 'stack' && isMakerLogoSuppressed(el.children, overrides, options)) return true;
   }
   return false;
 }
@@ -489,6 +539,7 @@ export function renderTemplateLayer(
 ) {
   const overrides = loadTemplateOverride(template.id);
   const elementOverrides = (overrides?.elements ?? {}) as OverrideMap;
+  const allowAllOverrides = template.id === 'customed';
 
   const zoneContext: EngineContext['zones'] = {};
   for (const [zoneId, zoneRect] of Object.entries(zones)) {
@@ -497,7 +548,9 @@ export function renderTemplateLayer(
     zoneContext[zoneId] = { rect: zoneRect, grid: { cols: resolved.cols, rows: resolved.rows, padding: resolved.padding } };
   }
 
-  const makerLogo = isMakerLogoSuppressed(template.elements, elementOverrides) ? null : input.makerLogo;
+  const makerLogo = isMakerLogoSuppressed(template.elements, elementOverrides, { allowAll: allowAllOverrides })
+    ? null
+    : input.makerLogo;
 
   const ctx: EngineContext = {
     width: zones.canvas?.width ?? 0,
@@ -515,7 +568,7 @@ export function renderTemplateLayer(
     const zone = ctx.zones[el.zone];
     if (!zone) continue;
 
-    const patched = applyOverridesToElement(el, elementOverrides);
+    const patched = applyOverridesToElement(el, elementOverrides, { allowAll: allowAllOverrides });
     if (!patched) continue;
 
     const placementRect = patched.box ? rectFromBox(zone.rect, patched.box, scale) : zone.rect;

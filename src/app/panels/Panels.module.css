@@ -266,6 +266,13 @@
   color: rgba(255, 255, 255, 0.86);
 }
 
+.gridControls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
 .hint {
   font-size: 12px;
   color: var(--muted);

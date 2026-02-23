@@ -1,4 +1,5 @@
 import classicFooterRaw from '../defs/classic_footer.json';
+import customedRaw from '../defs/customed.json';
 import ezmarkCardRaw from '../defs/ezmark_card.json';
 import picsealBannerRaw from '../defs/picseal_banner.json';
 import lightroomFooterRaw from '../defs/lightroom_footer.json';
@@ -15,6 +16,7 @@ import type { TemplateJson } from './types';
 
 const builtinTemplates: Record<string, TemplateJson> = {
   classic_footer: parseTemplateJson(classicFooterRaw),
+  customed: parseTemplateJson(customedRaw),
   ezmark_card: parseTemplateJson(ezmarkCardRaw),
   picseal_banner: parseTemplateJson(picsealBannerRaw),
   lightroom_footer: parseTemplateJson(lightroomFooterRaw),
