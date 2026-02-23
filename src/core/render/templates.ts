@@ -1,6 +1,7 @@
 import { clamp } from '../utils/clamp';
 import type { MakerLogo } from '../brand/makerLogo';
 import type { ExifData } from '../exif/types';
+import classicFooterJson from './defs/classic_footer.json';
 import {
   buildWatermarkFields,
   formatAperture,
@@ -11,6 +12,7 @@ import {
   formatLensName,
   formatShutterSeconds,
 } from '../exif/format';
+import { createWatermarkTemplateFromJson } from './engine/wrapTemplate';
 import { fitText, rgba, roundRectPath } from './draw';
 
 export type TemplateId =
@@ -121,10 +123,6 @@ function formatMakeShort(exif: ExifData): string | null {
   return make.replaceAll(/\s+/g, ' ').toUpperCase();
 }
 
-function getFooterScale(width: number): number {
-  return clamp(width / 1200, 0.75, 1.1);
-}
-
 function drawFooterDivider(ctx: CanvasRenderingContext2D, x: number, y: number, h: number) {
   ctx.save();
   ctx.beginPath();
@@ -169,85 +167,7 @@ function drawMakerLogo(
   return { width, height };
 }
 
-const classicFooter: WatermarkTemplate = {
-  id: 'classic_footer',
-  name: '经典白底栏',
-  description: '图 + 白色底栏（左右信息 + 中间品牌标记）。',
-  getLayout: ({ baseWidth, baseHeight }) => {
-    const scale = getFooterScale(baseWidth);
-    const footerHeight = Math.round(clamp(60 * scale, 52, 86));
-    return {
-      canvasWidth: baseWidth,
-      canvasHeight: baseHeight + footerHeight,
-      imageRect: { x: 0, y: 0, width: baseWidth, height: baseHeight },
-      imageDrawMode: 'contain',
-    };
-  },
-  render: (ctx, input) => {
-    const { width, height, exif, imageRect, makerLogo } = input;
-    const footerY = imageRect.y + imageRect.height;
-    const footerHeight = height - footerY;
-    const scale = getFooterScale(width);
-    const padding = Math.round(12 * scale);
-
-    ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,0.98)';
-    ctx.fillRect(0, footerY, width, footerHeight);
-    ctx.fillStyle = 'rgba(0,0,0,0.06)';
-    ctx.fillRect(0, footerY, width, 1);
-
-    const camera = formatCameraName(exif) ?? '相机';
-    const lens = formatLensName(exif);
-    const make = formatMakeShort(exif) ?? 'EXIF';
-
-    const titleSize = clamp(20 * scale, 14, 22);
-    const subSize = clamp(13 * scale, 10, 16);
-    const metaSize = clamp(14 * scale, 11, 16);
-
-    // Left group
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    setFont(ctx, 750, titleSize);
-    const leftTop = footerY + Math.round((footerHeight - (titleSize + subSize + 6 * scale)) / 2);
-    const leftMax = Math.round(width * 0.44);
-    ctx.fillStyle = 'rgba(20,20,22,0.92)';
-    ctx.fillText(fitText(ctx, camera, leftMax), padding, leftTop);
-
-    if (lens) {
-      setFont(ctx, 650, subSize);
-      ctx.fillStyle = 'rgba(60,60,66,0.62)';
-      ctx.fillText(fitText(ctx, lens, leftMax), padding, Math.round(leftTop + titleSize + 6 * scale));
-    }
-
-    // Right group
-    const parts = buildSettingsParts(exif);
-    const rightText = parts.length ? parts.join(' | ') : '—';
-    setFont(ctx, 700, metaSize);
-    ctx.textAlign = 'right';
-    ctx.fillStyle = 'rgba(20,20,22,0.9)';
-    const rightMax = Math.round(width * 0.44);
-    const rightTop = footerY + Math.round((footerHeight - metaSize) / 2);
-    ctx.fillText(fitText(ctx, rightText, rightMax), width - padding, rightTop);
-
-    // Center brand marker (only if there is space)
-    const centerY = footerY + footerHeight / 2;
-    if (makerLogo) {
-      drawMakerLogo(ctx, makerLogo, width / 2, centerY, Math.round(width * 0.18), Math.round(footerHeight * 0.38), {
-        align: 'center',
-        valign: 'middle',
-        opacity: 0.55,
-      });
-    } else {
-      const centerTop = footerY + Math.round((footerHeight - metaSize) / 2);
-      ctx.textAlign = 'center';
-      setFont(ctx, 700, clamp(12 * scale, 10, 14));
-      ctx.fillStyle = 'rgba(20,20,22,0.46)';
-      ctx.fillText(make, width / 2, centerTop + 1);
-    }
-
-    ctx.restore();
-  },
-};
+const classicFooter = createWatermarkTemplateFromJson(classicFooterJson);
 
 const ezmarkCard: WatermarkTemplate = {
   id: 'ezmark_card',
