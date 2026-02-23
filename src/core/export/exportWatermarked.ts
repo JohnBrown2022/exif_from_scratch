@@ -52,7 +52,12 @@ export async function exportWatermarkedImage(
   ]);
 
   try {
-    const { width: outW, height: outH } = getOutputSize(decoded.width, decoded.height, options.maxEdge);
+    const orientedWidth =
+      rotation?.canvas && rotation.dimensionSwapped ? decoded.height : decoded.width;
+    const orientedHeight =
+      rotation?.canvas && rotation.dimensionSwapped ? decoded.width : decoded.height;
+
+    const { width: outW, height: outH } = getOutputSize(orientedWidth, orientedHeight, options.maxEdge);
     const canvas = document.createElement('canvas');
 
     const mime = options.format === 'png' ? 'image/png' : 'image/jpeg';

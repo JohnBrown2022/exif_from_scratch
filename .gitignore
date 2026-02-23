@@ -27,3 +27,6 @@ pnpm-debug.log*
 task_plan.md
 findings.md
 progress.md
+
+# third-party reference repos (not vendored)
+third_repo/

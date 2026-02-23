@@ -68,7 +68,12 @@ export default function PreviewPanel({
       try {
         if (cancelled) return;
 
-        const previewSize = getPreviewSize(decoded.width, decoded.height, 1200);
+        const orientedWidth =
+          rotation?.canvas && rotation.dimensionSwapped ? decoded.height : decoded.width;
+        const orientedHeight =
+          rotation?.canvas && rotation.dimensionSwapped ? decoded.width : decoded.height;
+
+        const previewSize = getPreviewSize(orientedWidth, orientedHeight, 1200);
         const template = getTemplateById(templateId);
 
         renderWatermark({

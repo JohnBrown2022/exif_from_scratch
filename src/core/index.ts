@@ -4,6 +4,7 @@ export * from './exif/readRotation';
 export * from './exif/format';
 
 export * from './image/decodeImage';
+export * from './image/palette';
 
 export * from './render/templates';
 export * from './render/renderer';
