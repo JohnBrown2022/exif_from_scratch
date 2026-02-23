@@ -4,6 +4,7 @@ import { computeLayout, toTemplateLayout } from './layout';
 import { parseTemplateJson } from './fromJson';
 import { renderTemplateLayer } from './render';
 import type { TemplateJson } from './types';
+import { computeTemplateZones } from './zones';
 
 function splitLayers(template: TemplateJson) {
   const backdrop = template.elements.some((el) => (el.layer ?? 'overlay') === 'backdrop');
@@ -30,7 +31,8 @@ export function createWatermarkTemplateFromDefinition(template: TemplateJson): W
     renderBackdrop: hasBackdrop
       ? (ctx, input) => {
           const computed = computeLayout(template.layout, template.scaleModel, input.imageRect.width, input.imageRect.height);
-          renderTemplateLayer(ctx, template, computed.zones, computed.scale, 'backdrop', {
+          const zones = computeTemplateZones(template, computed.zones, computed.scale);
+          renderTemplateLayer(ctx, template, zones, computed.scale, 'backdrop', {
             exif: input.exif,
             makerLogo: input.makerLogo,
             palette: input.palette,
@@ -39,7 +41,8 @@ export function createWatermarkTemplateFromDefinition(template: TemplateJson): W
       : undefined,
     render: (ctx, input) => {
       const computed = computeLayout(template.layout, template.scaleModel, input.imageRect.width, input.imageRect.height);
-      renderTemplateLayer(ctx, template, computed.zones, computed.scale, 'overlay', {
+      const zones = computeTemplateZones(template, computed.zones, computed.scale);
+      renderTemplateLayer(ctx, template, zones, computed.scale, 'overlay', {
         exif: input.exif,
         makerLogo: input.makerLogo,
         palette: input.palette,

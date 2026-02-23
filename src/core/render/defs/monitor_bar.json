@@ -1,0 +1,45 @@
+{
+  "id": "monitor_bar",
+  "name": "Monitor 底栏",
+  "description": "均分显示核心参数（偏极简显示器风格）。",
+  "scaleModel": { "designWidth": 1400, "min": 0.75, "max": 1.15, "basis": "minEdge" },
+  "layout": { "kind": "photo_only", "photoDrawMode": "contain" },
+  "zones": {
+    "bar": {
+      "rect": {
+        "of": "photo",
+        "inset": {
+          "left": 0,
+          "right": 0,
+          "bottom": 0,
+          "height": { "designPx": 66, "minPx": 50, "maxPx": 110 }
+        }
+      }
+    }
+  },
+  "elements": [
+    {
+      "id": "bar_bg",
+      "type": "rect",
+      "zone": "bar",
+      "style": { "fill": "rgba(0,0,0,0.55)" }
+    },
+    {
+      "id": "settings",
+      "label": "参数",
+      "type": "text",
+      "zone": "bar",
+      "bind": { "kind": "settings", "joinWith": "  ", "fallback": "—" },
+      "editable": { "visible": true },
+      "style": {
+        "font": "mono",
+        "weight": 700,
+        "size": { "designPx": 15, "minPx": 12, "maxPx": 18 },
+        "color": "rgba(255,255,255,0.92)",
+        "align": "center",
+        "vAlign": "middle"
+      }
+    }
+  ]
+}
+

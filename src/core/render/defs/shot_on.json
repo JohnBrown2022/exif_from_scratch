@@ -1,0 +1,83 @@
+{
+  "id": "shot_on",
+  "name": "Shot on",
+  "description": "底部标语 + 参数（适合社交分享）。",
+  "scaleModel": { "designWidth": 1400, "min": 0.75, "max": 1.15, "basis": "minEdge" },
+  "layout": { "kind": "photo_only", "photoDrawMode": "contain" },
+  "zones": {
+    "bar": {
+      "rect": {
+        "of": "photo",
+        "inset": {
+          "left": 0,
+          "right": 0,
+          "bottom": 0,
+          "height": { "designPx": 84, "minPx": 64, "maxPx": 140 }
+        }
+      },
+      "grid": { "cols": 12, "rows": 12, "padding": { "designPx": 18, "minPx": 14, "maxPx": 28 } }
+    }
+  },
+  "elements": [
+    {
+      "id": "bar_bg",
+      "type": "rect",
+      "zone": "bar",
+      "style": { "fill": "rgba(0,0,0,0.46)" }
+    },
+    {
+      "id": "copy_stack",
+      "type": "stack",
+      "zone": "bar",
+      "grid": { "col": 1, "colSpan": 12, "row": 1, "rowSpan": 12 },
+      "direction": "vertical",
+      "gap": { "designPx": 8, "minPx": 6, "maxPx": 12 },
+      "align": "left",
+      "vAlign": "top",
+      "children": [
+        {
+          "id": "slogan",
+          "label": "标语",
+          "type": "text",
+          "zone": "bar",
+          "bind": {
+            "kind": "concat",
+            "parts": [
+              { "kind": "literal", "value": "SHOT ON " },
+              { "kind": "cameraName", "fallback": "Unknown Camera" }
+            ],
+            "joinWith": "",
+            "fallback": "SHOT ON"
+          },
+          "editable": { "visible": true },
+          "style": {
+            "font": "sans",
+            "weight": 850,
+            "size": { "designPx": 18, "minPx": 14, "maxPx": 22 },
+            "color": "rgba(255,255,255,0.92)",
+            "align": "left",
+            "vAlign": "top"
+          }
+        },
+        {
+          "id": "settings",
+          "label": "参数",
+          "type": "text",
+          "zone": "bar",
+          "bind": { "kind": "settings", "joinWith": " · " },
+          "condition": { "hideWhenEmpty": true },
+          "editable": { "visible": true },
+          "style": {
+            "font": "sans",
+            "weight": 650,
+            "size": { "designPx": 12, "minPx": 10, "maxPx": 16 },
+            "color": "rgba(255,255,255,0.82)",
+            "align": "left",
+            "vAlign": "top"
+          }
+        }
+      ]
+    }
+  ]
+}
+

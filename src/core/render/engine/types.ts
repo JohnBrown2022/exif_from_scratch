@@ -6,6 +6,7 @@ export type ScaleModel = {
   designWidth: number;
   min: number;
   max: number;
+  basis?: 'width' | 'minEdge';
 };
 
 export type Dimension =
@@ -17,6 +18,15 @@ export type Dimension =
       round?: 'round' | 'floor' | 'ceil';
     };
 
+export type BoxSpec = {
+  left?: Dimension;
+  right?: Dimension;
+  top?: Dimension;
+  bottom?: Dimension;
+  width?: Dimension;
+  height?: Dimension;
+};
+
 export type LayoutSpec =
   | {
       kind: 'photo_only';
@@ -26,6 +36,13 @@ export type LayoutSpec =
   | {
       kind: 'photo_plus_footer';
       footerHeight: Dimension;
+      outerPadding?: Dimension;
+      photoDrawMode?: ImageDrawMode;
+      photoCornerRadius?: Dimension;
+    }
+  | {
+      kind: 'fixed_ratio';
+      ratio: number;
       photoDrawMode?: ImageDrawMode;
       photoCornerRadius?: Dimension;
     };
@@ -37,6 +54,10 @@ export type ZoneGridSpec = {
 };
 
 export type ZoneSpec = {
+  rect?: {
+    of: string;
+    inset?: BoxSpec;
+  };
   grid?: ZoneGridSpec;
 };
 
@@ -60,6 +81,11 @@ export type TextBinding =
   | { kind: 'dateTime'; fallback?: string }
   | { kind: 'makeUpper'; fallback?: string }
   | { kind: 'settings'; joinWith?: string; fallback?: string }
+  | { kind: 'focalLength'; fallback?: string }
+  | { kind: 'aperture'; fallback?: string }
+  | { kind: 'shutter'; fallback?: string }
+  | { kind: 'iso'; fallback?: string }
+  | { kind: 'concat'; parts: TextBinding[]; joinWith?: string; fallback?: string }
   | { kind: 'literal'; value: string };
 
 export type FontFamily = 'sans' | 'mono';
@@ -73,6 +99,12 @@ export type TextStyle = {
   align?: 'left' | 'center' | 'right';
   vAlign?: 'top' | 'middle' | 'bottom';
   lineHeight?: number;
+  shadow?: {
+    color: string;
+    blur?: Dimension;
+    offsetX?: Dimension;
+    offsetY?: Dimension;
+  };
 };
 
 export type LogoStyle = {
@@ -86,9 +118,26 @@ export type LogoStyle = {
 };
 
 export type RectStyle = {
-  fill: string;
+  fill:
+    | string
+    | {
+        kind: 'linear';
+        x0: number;
+        y0: number;
+        x1: number;
+        y1: number;
+        stops: Array<{ offset: number; color: string }>;
+      };
   opacity?: number;
   radius?: Dimension;
+  stroke?: string;
+  strokeWidth?: Dimension;
+  shadow?: {
+    color: string;
+    blur?: Dimension;
+    offsetX?: Dimension;
+    offsetY?: Dimension;
+  };
 };
 
 export type DividerStyle = {
@@ -103,6 +152,7 @@ export type RectElement = {
   layer?: 'backdrop' | 'overlay';
   zone: string;
   grid?: GridPlacement;
+  box?: BoxSpec;
   style: RectStyle;
   condition?: ConditionSpec;
 };
@@ -113,6 +163,7 @@ export type DividerElement = {
   layer?: 'backdrop' | 'overlay';
   zone: string;
   grid?: GridPlacement;
+  box?: BoxSpec;
   orientation?: 'horizontal' | 'vertical';
   position?: 'top' | 'bottom' | 'left' | 'right' | 'center';
   style: DividerStyle;
@@ -126,6 +177,7 @@ export type TextElement = {
   layer?: 'backdrop' | 'overlay';
   zone: string;
   grid?: GridPlacement;
+  box?: BoxSpec;
   bind: TextBinding;
   style: TextStyle;
   condition?: ConditionSpec;
@@ -142,6 +194,7 @@ export type MakerLogoElement = {
   layer?: 'backdrop' | 'overlay';
   zone: string;
   grid?: GridPlacement;
+  box?: BoxSpec;
   style: LogoStyle;
   condition?: ConditionSpec;
   editable?: {
@@ -157,6 +210,7 @@ export type SwatchesElement = {
   layer?: 'backdrop' | 'overlay';
   zone: string;
   grid?: GridPlacement;
+  box?: BoxSpec;
   count?: number;
   style?: {
     radius?: Dimension;
@@ -173,6 +227,7 @@ export type StackElement = {
   layer?: 'backdrop' | 'overlay';
   zone: string;
   grid?: GridPlacement;
+  box?: BoxSpec;
   direction?: 'vertical' | 'horizontal';
   gap?: Dimension;
   align?: 'left' | 'center' | 'right';

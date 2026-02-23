@@ -1,0 +1,9 @@
+{
+  "id": "cinemascope",
+  "name": "Cinemascope",
+  "description": "电影宽银幕（2.39:1，cover 裁切）。",
+  "scaleModel": { "designWidth": 1000, "min": 1, "max": 1, "basis": "width" },
+  "layout": { "kind": "fixed_ratio", "ratio": 2.39, "photoDrawMode": "cover" },
+  "elements": []
+}
+

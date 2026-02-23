@@ -1,0 +1,165 @@
+{
+  "id": "ezmark_card",
+  "name": "EZMark 卡片",
+  "description": "圆角卡片 + 白色信息条 + 色卡（主色提取）。",
+  "scaleModel": { "designWidth": 900, "min": 0.75, "max": 1.15, "basis": "width" },
+  "layout": {
+    "kind": "photo_plus_footer",
+    "outerPadding": { "designPx": 18, "minPx": 12, "maxPx": 30 },
+    "footerHeight": { "designPx": 112, "minPx": 90, "maxPx": 190 },
+    "photoDrawMode": "contain",
+    "photoCornerRadius": { "designPx": 18, "minPx": 14, "maxPx": 28 }
+  },
+  "zones": {
+    "footer": {
+      "grid": { "cols": 12, "rows": 12, "padding": { "designPx": 16, "minPx": 12, "maxPx": 22 } }
+    },
+    "footer_swatches": {
+      "rect": {
+        "of": "footer",
+        "inset": {
+          "right": { "designPx": 16, "minPx": 12, "maxPx": 22 },
+          "bottom": { "designPx": 16, "minPx": 12, "maxPx": 22 },
+          "width": { "designPx": 240, "minPx": 160, "maxPx": 320 },
+          "height": { "designPx": 18, "minPx": 14, "maxPx": 22 }
+        }
+      }
+    }
+  },
+  "requirements": { "makerLogo": true, "palette": true },
+  "elements": [
+    {
+      "id": "card_bg",
+      "type": "rect",
+      "layer": "backdrop",
+      "zone": "content",
+      "style": {
+        "fill": "rgba(255,255,255,0.98)",
+        "radius": { "designPx": 18, "minPx": 14, "maxPx": 28 },
+        "shadow": {
+          "color": "rgba(0,0,0,0.22)",
+          "blur": { "designPx": 22, "minPx": 10, "maxPx": 40 },
+          "offsetY": { "designPx": 10, "minPx": 6, "maxPx": 24 }
+        }
+      }
+    },
+    {
+      "id": "footer_divider",
+      "type": "divider",
+      "zone": "footer",
+      "orientation": "horizontal",
+      "position": "top",
+      "style": { "color": "rgba(0,0,0,0.06)", "thickness": 1 }
+    },
+    {
+      "id": "left_stack",
+      "type": "stack",
+      "zone": "footer",
+      "grid": { "col": 1, "colSpan": 7, "row": 1, "rowSpan": 12 },
+      "direction": "vertical",
+      "gap": { "designPx": 6, "minPx": 4, "maxPx": 10 },
+      "align": "left",
+      "vAlign": "top",
+      "children": [
+        {
+          "id": "camera",
+          "label": "相机",
+          "type": "text",
+          "zone": "footer",
+          "bind": { "kind": "cameraName", "fallback": "相机" },
+          "editable": { "visible": true },
+          "style": {
+            "font": "sans",
+            "weight": 750,
+            "size": { "designPx": 18, "minPx": 14, "maxPx": 22 },
+            "color": "rgba(0,0,0,0.88)",
+            "align": "left",
+            "vAlign": "top"
+          }
+        },
+        {
+          "id": "date",
+          "label": "日期",
+          "type": "text",
+          "zone": "footer",
+          "bind": { "kind": "dateTime" },
+          "condition": { "hideWhenEmpty": true },
+          "editable": { "visible": true },
+          "style": {
+            "font": "sans",
+            "weight": 650,
+            "size": { "designPx": 12, "minPx": 10, "maxPx": 15 },
+            "color": "rgba(0,0,0,0.42)",
+            "align": "left",
+            "vAlign": "top"
+          }
+        }
+      ]
+    },
+    {
+      "id": "maker_logo",
+      "label": "厂商 Logo",
+      "type": "maker_logo",
+      "zone": "footer",
+      "grid": { "col": 8, "colSpan": 5, "row": 1, "rowSpan": 5 },
+      "condition": { "showWhenMakerLogoPresent": true },
+      "editable": { "visible": true, "logoStyle": true, "monoColor": true },
+      "style": {
+        "style": "color",
+        "opacity": 0.82,
+        "align": "right",
+        "vAlign": "top",
+        "maxWidth": { "designPx": 140, "minPx": 110, "maxPx": 180 },
+        "maxHeight": { "designPx": 22, "minPx": 16, "maxPx": 28 }
+      }
+    },
+    {
+      "id": "maker_text",
+      "label": "厂商文字",
+      "type": "text",
+      "zone": "footer",
+      "grid": { "col": 8, "colSpan": 5, "row": 1, "rowSpan": 5 },
+      "condition": { "showWhenMakerLogoMissing": true },
+      "bind": { "kind": "makeUpper", "fallback": "EXIF" },
+      "editable": { "visible": true },
+      "style": {
+        "font": "sans",
+        "weight": 800,
+        "size": { "designPx": 12, "minPx": 10, "maxPx": 14 },
+        "color": "rgba(0,0,0,0.72)",
+        "align": "right",
+        "vAlign": "top"
+      }
+    },
+    {
+      "id": "settings",
+      "label": "参数",
+      "type": "text",
+      "zone": "footer",
+      "grid": { "col": 8, "colSpan": 5, "row": 6, "rowSpan": 5 },
+      "bind": { "kind": "settings", "joinWith": "  ", "fallback": "—" },
+      "editable": { "visible": true },
+      "style": {
+        "font": "sans",
+        "weight": 650,
+        "size": { "designPx": 12, "minPx": 10, "maxPx": 15 },
+        "color": "rgba(0,0,0,0.72)",
+        "align": "right",
+        "vAlign": "top"
+      }
+    },
+    {
+      "id": "swatches",
+      "type": "swatches",
+      "zone": "footer_swatches",
+      "condition": { "showWhenPalettePresent": true },
+      "count": 4,
+      "style": {
+        "radius": { "designPx": 7, "minPx": 6, "maxPx": 9 },
+        "gap": { "designPx": 8, "minPx": 6, "maxPx": 12 },
+        "stroke": "rgba(0,0,0,0.12)"
+      }
+    }
+  ]
+}
+

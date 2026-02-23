@@ -1,0 +1,89 @@
+{
+  "id": "film",
+  "name": "胶片风",
+  "description": "白色边框 + 底部信息条。",
+  "scaleModel": { "designWidth": 1000, "min": 0.75, "max": 1.15, "basis": "minEdge" },
+  "layout": { "kind": "photo_only", "photoDrawMode": "contain" },
+  "zones": {
+    "strip": {
+      "rect": {
+        "of": "photo",
+        "inset": {
+          "left": 0,
+          "right": 0,
+          "bottom": 0,
+          "height": { "designPx": 180, "minPx": 110, "maxPx": 280 }
+        }
+      },
+      "grid": { "cols": 12, "rows": 12, "padding": { "designPx": 30, "minPx": 14, "maxPx": 34 } }
+    }
+  },
+  "elements": [
+    {
+      "id": "frame",
+      "type": "rect",
+      "zone": "canvas",
+      "style": {
+        "fill": "rgba(0,0,0,0)",
+        "stroke": "rgba(255,255,255,0.92)",
+        "strokeWidth": { "designPx": 24, "minPx": 14, "maxPx": 48 }
+      }
+    },
+    {
+      "id": "strip_bg",
+      "type": "rect",
+      "zone": "strip",
+      "style": { "fill": "rgba(255,255,255,0.9)" }
+    },
+    {
+      "id": "strip_lines",
+      "type": "stack",
+      "zone": "strip",
+      "grid": { "col": 1, "colSpan": 12, "row": 1, "rowSpan": 12 },
+      "direction": "vertical",
+      "gap": { "designPx": 10, "minPx": 6, "maxPx": 14 },
+      "align": "left",
+      "vAlign": "top",
+      "children": [
+        {
+          "id": "camera",
+          "label": "相机",
+          "type": "text",
+          "zone": "strip",
+          "bind": { "kind": "cameraName", "fallback": "无 EXIF" },
+          "editable": { "visible": true },
+          "style": {
+            "font": "sans",
+            "weight": 650,
+            "size": { "designPx": 30, "minPx": 14, "maxPx": 34 },
+            "color": "rgba(0,0,0,0.85)",
+            "align": "left",
+            "vAlign": "top"
+          }
+        },
+        {
+          "id": "secondary",
+          "label": "镜头/参数/日期",
+          "type": "text",
+          "zone": "strip",
+          "bind": {
+            "kind": "concat",
+            "parts": [{ "kind": "lensName" }, { "kind": "settings" }, { "kind": "dateTime" }],
+            "joinWith": " · "
+          },
+          "condition": { "hideWhenEmpty": true },
+          "editable": { "visible": true },
+          "style": {
+            "font": "sans",
+            "weight": 500,
+            "size": { "designPx": 26, "minPx": 12, "maxPx": 30 },
+            "color": "rgba(0,0,0,0.85)",
+            "align": "left",
+            "vAlign": "top"
+          }
+        }
+      ]
+    }
+  ]
+}
+

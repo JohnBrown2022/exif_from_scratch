@@ -13,7 +13,7 @@ export function computeLayout(
   baseHeight: number,
 ): ComputedLayout {
   const photoDrawMode = layout.photoDrawMode ?? 'contain';
-  const scale = computeScale(baseWidth, scaleModel);
+  const scale = computeScale(baseWidth, baseHeight, scaleModel);
   const photoCornerRadius = resolveDimension(layout.photoCornerRadius, scale, 0);
 
   if (layout.kind === 'photo_only') {
@@ -26,6 +26,7 @@ export function computeLayout(
       photoRect,
       zones: {
         canvas: rect(0, 0, canvasWidth, canvasHeight),
+        content: rect(0, 0, canvasWidth, canvasHeight),
         photo: photoRect,
       },
       photoDrawMode,
@@ -35,21 +36,46 @@ export function computeLayout(
   }
 
   if (layout.kind === 'photo_plus_footer') {
+    const outer = Math.max(0, resolveDimension(layout.outerPadding, scale, 0));
     const footerHeight = resolveDimension(layout.footerHeight, scale, 0);
-    const canvasWidth = baseWidth;
-    const canvasHeight = baseHeight + footerHeight;
-    const photoRect = rect(0, 0, baseWidth, baseHeight);
-    const footerRect = rect(0, baseHeight, baseWidth, footerHeight);
+    const canvasWidth = baseWidth + outer * 2;
+    const canvasHeight = baseHeight + footerHeight + outer * 2;
+    const photoRect = rect(outer, outer, baseWidth, baseHeight);
+    const footerRect = rect(outer, outer + baseHeight, baseWidth, footerHeight);
+    const contentRect = rect(outer, outer, baseWidth, baseHeight + footerHeight);
     return {
       canvasWidth,
       canvasHeight,
       photoRect,
       zones: {
         canvas: rect(0, 0, canvasWidth, canvasHeight),
+        content: contentRect,
         photo: photoRect,
         footer: footerRect,
       },
       photoDrawMode,
+      photoCornerRadius: photoCornerRadius > 0 ? photoCornerRadius : undefined,
+      scale,
+    };
+  }
+
+  if (layout.kind === 'fixed_ratio') {
+    const ratio = layout.ratio;
+    if (!Number.isFinite(ratio) || ratio <= 0) throw new Error(`Invalid fixed_ratio layout: ratio must be > 0`);
+
+    const canvasWidth = baseWidth;
+    const canvasHeight = Math.max(1, Math.round(baseWidth / ratio));
+    const photoRect = rect(0, 0, canvasWidth, canvasHeight);
+    return {
+      canvasWidth,
+      canvasHeight,
+      photoRect,
+      zones: {
+        canvas: rect(0, 0, canvasWidth, canvasHeight),
+        content: rect(0, 0, canvasWidth, canvasHeight),
+        photo: photoRect,
+      },
+      photoDrawMode: layout.photoDrawMode ?? 'cover',
       photoCornerRadius: photoCornerRadius > 0 ? photoCornerRadius : undefined,
       scale,
     };
@@ -69,4 +95,3 @@ export function toTemplateLayout(computed: ComputedLayout): TemplateLayout {
     imageCornerRadius: computed.photoCornerRadius,
   };
 }
-

@@ -42,6 +42,23 @@ export function resolveTextBinding(exif: ExifData, bind: TextBinding): string | 
       if (!parts.length) return bind.fallback ?? null;
       return parts.join(joinWith);
     }
+    case 'focalLength':
+      return formatFocalLength(exif.focalLengthMm) ?? bind.fallback ?? null;
+    case 'aperture':
+      return formatAperture(exif.apertureFNumber) ?? bind.fallback ?? null;
+    case 'shutter':
+      return formatShutterSeconds(exif.exposureTimeSeconds) ?? bind.fallback ?? null;
+    case 'iso':
+      return formatISO(exif.iso) ?? bind.fallback ?? null;
+    case 'concat': {
+      const joinWith = bind.joinWith ?? '';
+      const parts = (bind.parts ?? [])
+        .map((part) => resolveTextBinding(exif, part))
+        .filter((part): part is string => Boolean(part && part.trim().length > 0));
+      if (!parts.length) return bind.fallback ?? null;
+      const joined = parts.join(joinWith);
+      return joined.trim().length ? joined : bind.fallback ?? null;
+    }
     case 'literal':
       return bind.value;
     default: {

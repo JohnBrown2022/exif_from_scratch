@@ -5,6 +5,7 @@ import { fitText, roundRectPath } from '../draw';
 import type { Rect } from '../templates';
 
 import { resolveTextBinding } from './bindings';
+import { rectFromBox } from './box';
 import { rectFromGrid, resolveGrid } from './grid';
 import type {
   ConditionSpec,
@@ -31,6 +32,19 @@ function rectCenterY(r: Rect): number {
 function applyOpacity(ctx: CanvasRenderingContext2D, opacity: number | undefined) {
   if (typeof opacity !== 'number') return;
   ctx.globalAlpha *= clamp(opacity, 0, 1);
+}
+
+function applyShadow(
+  ctx2d: CanvasRenderingContext2D,
+  shadow: { color: string; blur?: Dimension; offsetX?: Dimension; offsetY?: Dimension } | undefined,
+  scale: number,
+) {
+  if (!shadow) return;
+  if (!shadow.color) return;
+  ctx2d.shadowColor = shadow.color;
+  ctx2d.shadowBlur = Math.max(0, resolveDimension(shadow.blur, scale, 0));
+  ctx2d.shadowOffsetX = resolveDimension(shadow.offsetX, scale, 0);
+  ctx2d.shadowOffsetY = resolveDimension(shadow.offsetY, scale, 0);
 }
 
 function setFont(ctx: CanvasRenderingContext2D, family: 'sans' | 'mono', weight: number, sizePx: number) {
@@ -170,6 +184,7 @@ function drawTextElement(ctx2d: CanvasRenderingContext2D, el: TextElement, box: 
 
   ctx2d.save();
   applyOpacity(ctx2d, el.style.opacity);
+  applyShadow(ctx2d, el.style.shadow, ctx.scale);
 
   const fontFamily = el.style.font ?? 'sans';
   const fontWeight = el.style.weight ?? 600;
@@ -190,18 +205,59 @@ function drawTextElement(ctx2d: CanvasRenderingContext2D, el: TextElement, box: 
   ctx2d.restore();
 }
 
+function resolveRectFill(
+  ctx2d: CanvasRenderingContext2D,
+  fill: RectElement['style']['fill'],
+  box: Rect,
+): string | CanvasGradient {
+  if (typeof fill === 'string') return fill;
+  if (!fill || typeof fill !== 'object' || fill.kind !== 'linear') return 'transparent';
+
+  const x0 = box.x + box.width * fill.x0;
+  const y0 = box.y + box.height * fill.y0;
+  const x1 = box.x + box.width * fill.x1;
+  const y1 = box.y + box.height * fill.y1;
+  const gradient = ctx2d.createLinearGradient(x0, y0, x1, y1);
+  for (const stop of fill.stops ?? []) {
+    if (typeof stop.offset !== 'number' || !Number.isFinite(stop.offset)) continue;
+    if (typeof stop.color !== 'string') continue;
+    gradient.addColorStop(clamp(stop.offset, 0, 1), stop.color);
+  }
+  return gradient;
+}
+
 function drawRectElement(ctx2d: CanvasRenderingContext2D, el: RectElement, box: Rect, ctx: EngineContext): void {
   ctx2d.save();
   applyOpacity(ctx2d, el.style.opacity);
+  applyShadow(ctx2d, el.style.shadow, ctx.scale);
 
   const radius = resolveDimension(el.style.radius, ctx.scale, 0);
+  const fill = resolveRectFill(ctx2d, el.style.fill, box);
+  const stroke = el.style.stroke;
+  const strokeWidth = Math.max(1, resolveDimension(el.style.strokeWidth, ctx.scale, 1));
+
   if (radius > 0) {
     roundRectPath(ctx2d, box.x, box.y, box.width, box.height, radius);
-    ctx2d.fillStyle = el.style.fill;
+    ctx2d.fillStyle = fill;
     ctx2d.fill();
+    if (stroke) {
+      ctx2d.lineWidth = strokeWidth;
+      ctx2d.strokeStyle = stroke;
+      ctx2d.stroke();
+    }
   } else {
-    ctx2d.fillStyle = el.style.fill;
+    ctx2d.fillStyle = fill;
     ctx2d.fillRect(box.x, box.y, box.width, box.height);
+    if (stroke) {
+      ctx2d.lineWidth = strokeWidth;
+      ctx2d.strokeStyle = stroke;
+      ctx2d.strokeRect(
+        box.x + strokeWidth / 2,
+        box.y + strokeWidth / 2,
+        box.width - strokeWidth,
+        box.height - strokeWidth,
+      );
+    }
   }
 
   ctx2d.restore();
@@ -459,11 +515,12 @@ export function renderTemplateLayer(
     const zone = ctx.zones[el.zone];
     if (!zone) continue;
 
-    const resolved = resolveGrid(zone.rect, template.zones?.[el.zone]?.grid, scale);
-    const box = el.grid ? rectFromGrid(resolved, el.grid) : zone.rect;
-
     const patched = applyOverridesToElement(el, elementOverrides);
     if (!patched) continue;
+
+    const placementRect = patched.box ? rectFromBox(zone.rect, patched.box, scale) : zone.rect;
+    const resolved = resolveGrid(placementRect, template.zones?.[el.zone]?.grid, scale);
+    const box = patched.grid ? rectFromGrid(resolved, patched.grid) : placementRect;
     renderElement(ctx2d, patched, box, ctx);
   }
 }

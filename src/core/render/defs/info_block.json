@@ -1,0 +1,101 @@
+{
+  "id": "info_block",
+  "name": "左下角信息块",
+  "description": "更克制的背景块，遮挡更少。",
+  "scaleModel": { "designWidth": 1000, "min": 0.75, "max": 1.15, "basis": "width" },
+  "layout": { "kind": "photo_only", "photoDrawMode": "contain" },
+  "zones": {
+    "block": {
+      "rect": {
+        "of": "photo",
+        "inset": {
+          "left": { "designPx": 30, "minPx": 16, "maxPx": 44 },
+          "bottom": { "designPx": 30, "minPx": 16, "maxPx": 44 },
+          "width": { "designPx": 620, "maxPx": 720 },
+          "height": { "designPx": 200, "minPx": 110, "maxPx": 220 }
+        }
+      },
+      "grid": { "cols": 12, "rows": 12, "padding": { "designPx": 18, "minPx": 10, "maxPx": 24 } }
+    }
+  },
+  "elements": [
+    {
+      "id": "block_bg",
+      "type": "rect",
+      "zone": "block",
+      "style": {
+        "fill": "rgba(0,0,0,0.42)",
+        "radius": { "designPx": 18, "minPx": 10, "maxPx": 22 },
+        "stroke": "rgba(255,255,255,0.16)",
+        "strokeWidth": 1
+      }
+    },
+    {
+      "id": "lines",
+      "type": "stack",
+      "zone": "block",
+      "grid": { "col": 1, "colSpan": 12, "row": 1, "rowSpan": 12 },
+      "direction": "vertical",
+      "gap": { "designPx": 8, "minPx": 6, "maxPx": 12 },
+      "align": "left",
+      "vAlign": "top",
+      "children": [
+        {
+          "id": "camera",
+          "label": "相机",
+          "type": "text",
+          "zone": "block",
+          "bind": { "kind": "cameraName", "fallback": "无 EXIF" },
+          "editable": { "visible": true },
+          "style": {
+            "font": "sans",
+            "weight": 650,
+            "size": { "designPx": 28, "minPx": 13, "maxPx": 30 },
+            "color": "rgba(255,255,255,0.94)",
+            "align": "left",
+            "vAlign": "top"
+          }
+        },
+        {
+          "id": "secondary",
+          "label": "镜头/参数",
+          "type": "text",
+          "zone": "block",
+          "bind": {
+            "kind": "concat",
+            "parts": [{ "kind": "lensName" }, { "kind": "settings" }],
+            "joinWith": " · "
+          },
+          "condition": { "hideWhenEmpty": true },
+          "editable": { "visible": true },
+          "style": {
+            "font": "sans",
+            "weight": 500,
+            "size": { "designPx": 26, "minPx": 12, "maxPx": 28 },
+            "color": "rgba(255,255,255,0.94)",
+            "align": "left",
+            "vAlign": "top"
+          }
+        },
+        {
+          "id": "date",
+          "label": "日期",
+          "type": "text",
+          "zone": "block",
+          "bind": { "kind": "dateTime" },
+          "condition": { "hideWhenEmpty": true },
+          "editable": { "visible": true },
+          "style": {
+            "font": "sans",
+            "weight": 500,
+            "size": { "designPx": 24, "minPx": 12, "maxPx": 26 },
+            "color": "rgba(255,255,255,0.94)",
+            "align": "left",
+            "vAlign": "top"
+          }
+        }
+      ]
+    }
+  ]
+}
+
