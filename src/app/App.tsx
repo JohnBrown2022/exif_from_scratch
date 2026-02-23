@@ -38,8 +38,6 @@ export default function App() {
   const [maxEdge, setMaxEdge] = useState<number | 'original'>('original');
   const [jpegBackground, setJpegBackground] = useState<string>('#000000');
 
-  const [makerLogoRevision, setMakerLogoRevision] = useState(0);
-
   const [selectedExif, setSelectedExif] = useState<ExifData | null>(null);
   const [selectedExifError, setSelectedExifError] = useState<string | null>(null);
   const [isReadingExif, setIsReadingExif] = useState(false);
@@ -268,7 +266,6 @@ export default function App() {
             isReadingExif={isReadingExif}
             jpegBackground={jpegBackground}
             exportFormat={exportFormat}
-            makerLogoRevision={makerLogoRevision}
           />
         </section>
 
@@ -296,7 +293,6 @@ export default function App() {
             exif={selectedExif}
             exifError={selectedExifError}
             isReadingExif={isReadingExif}
-            onMakerLogoChanged={() => setMakerLogoRevision((prev) => prev + 1)}
           />
         </section>
       </main>

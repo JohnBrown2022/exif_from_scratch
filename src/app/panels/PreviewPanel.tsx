@@ -20,7 +20,6 @@ type Props = {
   isReadingExif: boolean;
   jpegBackground: string;
   exportFormat: ExportFormat;
-  makerLogoRevision?: number;
 };
 
 function getPreviewSize(width: number, height: number, maxEdge: number) {
@@ -38,7 +37,6 @@ export default function PreviewPanel({
   isReadingExif,
   jpegBackground,
   exportFormat,
-  makerLogoRevision,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -112,7 +110,7 @@ export default function PreviewPanel({
     return () => {
       cancelled = true;
     };
-  }, [exif, exportFormat, file, jpegBackground, templateId, makerLogoRevision]);
+  }, [exif, exportFormat, file, jpegBackground, templateId]);
 
   return (
     <div className={ui.panelRoot}>

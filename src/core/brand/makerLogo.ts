@@ -9,6 +9,30 @@ export type MakerLogo = {
 
 const STORAGE_PREFIX = 'makerLogo:';
 
+const BUILTIN_LOGO_URLS: Record<string, string> = {
+  apple: new URL('../../assets/maker/apple.svg', import.meta.url).toString(),
+  canon: new URL('../../assets/maker/canon.svg', import.meta.url).toString(),
+  dji: new URL('../../assets/maker/dji.svg', import.meta.url).toString(),
+  fujifilm: new URL('../../assets/maker/fujifilm.svg', import.meta.url).toString(),
+  huawei: new URL('../../assets/maker/huawei.svg', import.meta.url).toString(),
+  insta360: new URL('../../assets/maker/insta360.svg', import.meta.url).toString(),
+  leica: new URL('../../assets/maker/leica.svg', import.meta.url).toString(),
+  lumix: new URL('../../assets/maker/lumix.svg', import.meta.url).toString(),
+  nikon: new URL('../../assets/maker/nikon.svg', import.meta.url).toString(),
+  olympus: new URL('../../assets/maker/olympus.svg', import.meta.url).toString(),
+  panasonic: new URL('../../assets/maker/panasonic.svg', import.meta.url).toString(),
+  ricoh: new URL('../../assets/maker/ricoh.svg', import.meta.url).toString(),
+  samsung: new URL('../../assets/maker/samsung.svg', import.meta.url).toString(),
+  sigma: new URL('../../assets/maker/sigma.svg', import.meta.url).toString(),
+  sony: new URL('../../assets/maker/sony.svg', import.meta.url).toString(),
+  unknown: new URL('../../assets/maker/unknown.svg', import.meta.url).toString(),
+  xiaomi: new URL('../../assets/maker/xiaomi.svg', import.meta.url).toString(),
+};
+
+function getBuiltinLogoUrl(key: string): string | null {
+  return BUILTIN_LOGO_URLS[key] ?? null;
+}
+
 function normalize(value: string | null | undefined): string {
   return (value ?? '').trim().toUpperCase();
 }
@@ -57,7 +81,7 @@ export function getMakerLogoDataUrl(key: string): string | null {
   }
 }
 
-const makerLogoCache = new Map<string, { dataUrl: string; logo: MakerLogo }>();
+const makerLogoCache = new Map<string, { src: string; logo: MakerLogo }>();
 const makerLogoPending = new Map<string, Promise<MakerLogo | null>>();
 
 export function setMakerLogoDataUrl(key: string, dataUrl: string) {
@@ -83,6 +107,7 @@ export function clearMakerLogoDataUrl(key: string) {
 async function loadHtmlImage(src: string): Promise<HTMLImageElement> {
   const image = new Image();
   image.decoding = 'async';
+  image.crossOrigin = 'anonymous';
   image.src = src;
 
   await new Promise<void>((resolve, reject) => {
@@ -94,26 +119,26 @@ async function loadHtmlImage(src: string): Promise<HTMLImageElement> {
 }
 
 export async function loadMakerLogo(key: string): Promise<MakerLogo | null> {
-  const dataUrl = getMakerLogoDataUrl(key);
-  if (!dataUrl) {
+  const src = getMakerLogoDataUrl(key) ?? getBuiltinLogoUrl(key);
+  if (!src) {
     makerLogoCache.delete(key);
     return null;
   }
 
   const cached = makerLogoCache.get(key);
-  if (cached && cached.dataUrl === dataUrl) return cached.logo;
+  if (cached && cached.src === src) return cached.logo;
 
   const pending = makerLogoPending.get(key);
   if (pending) return pending;
 
   const promise = (async () => {
-    const image = await loadHtmlImage(dataUrl);
+    const image = await loadHtmlImage(src);
     const logo: MakerLogo = {
       source: image,
       width: image.naturalWidth || image.width,
       height: image.naturalHeight || image.height,
     };
-    makerLogoCache.set(key, { dataUrl, logo });
+    makerLogoCache.set(key, { src, logo });
     return logo;
   })()
     .catch(() => {

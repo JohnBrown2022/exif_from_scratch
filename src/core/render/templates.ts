@@ -329,35 +329,47 @@ const ezmarkCard: WatermarkTemplate = {
     const settingsText = parts.length ? parts.join('  ') : '—';
 
     // Make label (acts as logo)
+    const labelMaxWidth = Math.round(140 * scale);
+    const labelMaxHeight = Math.round(22 * scale);
+    const labelTop = baseTop + Math.round(2 * scale);
+    const labelGap = Math.round(8 * scale);
+
     let labelWidth = 0;
+    let labelHeight = 0;
+
     if (makerLogo) {
-      const drawn = drawMakerLogo(
-        ctx,
-        makerLogo,
-        rightX,
-        baseTop + Math.round(2 * scale),
-        Math.round(140 * scale),
-        Math.round(22 * scale),
-        { align: 'right', valign: 'top', opacity: 0.82 },
-      );
+      const drawn = drawMakerLogo(ctx, makerLogo, rightX, labelTop, labelMaxWidth, labelMaxHeight, {
+        align: 'right',
+        valign: 'top',
+        opacity: 0.82,
+      });
       labelWidth = drawn.width;
+      labelHeight = drawn.height;
     } else if (make) {
-      setFont(ctx, 800, clamp(12 * scale, 10, 14));
+      const fontSize = clamp(12 * scale, 10, 14);
+      setFont(ctx, 800, fontSize);
       ctx.fillStyle = 'rgba(0,0,0,0.72)';
       ctx.textAlign = 'right';
-      ctx.fillText(make, rightX, baseTop + 1);
+      ctx.textBaseline = 'top';
+      ctx.fillText(make, rightX, labelTop);
       labelWidth = ctx.measureText(make).width;
+      labelHeight = Math.round(fontSize * 1.2);
     }
 
-    if (labelWidth > 0) {
-      drawFooterDivider(ctx, Math.round(rightX - labelWidth - 10 * scale), baseTop - 2, Math.round(44 * scale));
+    if (labelWidth > 0 && labelHeight > 0) {
+      const dividerX = Math.round(rightX - labelWidth - 10 * scale);
+      const dividerY = Math.round(labelTop - 2 * scale);
+      const dividerH = Math.round(labelHeight + 6 * scale);
+      drawFooterDivider(ctx, dividerX, dividerY, dividerH);
     }
 
-    // Settings row
+    // Settings row (keep below the logo/text to avoid overlap)
+    const settingsTop = labelHeight > 0 ? labelTop + labelHeight + labelGap : baseTop + Math.round(20 * scale);
     ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
     setFont(ctx, 650, subSize);
     ctx.fillStyle = 'rgba(0,0,0,0.72)';
-    ctx.fillText(fitText(ctx, settingsText, imageRect.width * 0.46), rightX, baseTop + Math.round(20 * scale));
+    ctx.fillText(fitText(ctx, settingsText, imageRect.width * 0.46), rightX, settingsTop);
 
     // Swatches
     const swatches = (palette ?? []).slice(0, 4);
@@ -456,13 +468,13 @@ const picsealBanner: WatermarkTemplate = {
       drawMakerLogo(ctx, makerLogo, brandX, brandY, Math.round(width * 0.2), Math.round(footerHeight * 0.62), {
         align: 'right',
         valign: 'middle',
-        opacity: 0.26,
+        opacity: 0.92,
       });
     } else {
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       setFont(ctx, 900, clamp(22 * scale, 18, 28));
-      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.fillStyle = 'rgba(0,0,0,0.52)';
       ctx.fillText(make, brandX, brandY);
     }
 
