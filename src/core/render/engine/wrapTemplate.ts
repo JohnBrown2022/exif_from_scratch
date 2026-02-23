@@ -12,6 +12,10 @@ function splitLayers(template: TemplateJson) {
 
 export function createWatermarkTemplateFromJson(raw: unknown): WatermarkTemplate {
   const template = parseTemplateJson(raw);
+  return createWatermarkTemplateFromDefinition(template);
+}
+
+export function createWatermarkTemplateFromDefinition(template: TemplateJson): WatermarkTemplate {
   const { hasBackdrop } = splitLayers(template);
 
   const watermarkTemplate: WatermarkTemplate = {
@@ -45,4 +49,3 @@ export function createWatermarkTemplateFromJson(raw: unknown): WatermarkTemplate
 
   return watermarkTemplate;
 }
-

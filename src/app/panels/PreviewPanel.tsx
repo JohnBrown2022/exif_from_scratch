@@ -15,6 +15,7 @@ import {
 type Props = {
   file: File | null;
   templateId: TemplateId;
+  renderRevision: number;
   exif: ExifData | null;
   exifError: string | null;
   isReadingExif: boolean;
@@ -32,6 +33,7 @@ function getPreviewSize(width: number, height: number, maxEdge: number) {
 export default function PreviewPanel({
   file,
   templateId,
+  renderRevision,
   exif,
   exifError,
   isReadingExif,
@@ -110,7 +112,7 @@ export default function PreviewPanel({
     return () => {
       cancelled = true;
     };
-  }, [exif, exportFormat, file, jpegBackground, templateId]);
+  }, [exif, exportFormat, file, jpegBackground, renderRevision, templateId]);
 
   return (
     <div className={ui.panelRoot}>

@@ -1,17 +1,58 @@
 import ui from './Panels.module.css';
 import {
   buildWatermarkFields,
+  getBuiltinTemplateJson,
+  loadTemplateOverride,
+  normalizeHexColor,
+  saveTemplateOverride,
+  setElementOverride,
   WATERMARK_TEMPLATES,
   type BatchUpdate,
+  type ElementSpec,
   type ExifData,
+  type MakerLogoElement,
   type TemplateId,
+  type TextElement,
 } from '../../core';
 
 export type ExportFormat = 'png' | 'jpeg';
 
+type EditableItem =
+  | { type: 'text'; el: TextElement }
+  | { type: 'maker_logo'; el: MakerLogoElement };
+
+function collectEditableItems(elements: ElementSpec[]): EditableItem[] {
+  const items: EditableItem[] = [];
+
+  const walk = (els: ElementSpec[]) => {
+    for (const el of els) {
+      if (el.type === 'stack') {
+        walk(el.children);
+        continue;
+      }
+
+      if (el.type === 'text' && (el.editable?.visible || el.editable?.text)) {
+        items.push({ type: 'text', el });
+        continue;
+      }
+
+      if (
+        el.type === 'maker_logo' &&
+        (el.editable?.visible || el.editable?.logoStyle || el.editable?.monoColor)
+      ) {
+        items.push({ type: 'maker_logo', el });
+      }
+    }
+  };
+
+  walk(elements);
+  return items;
+}
+
 type Props = {
   templateId: TemplateId;
   onTemplateChange: (id: TemplateId) => void;
+  onTemplateOverridesChange: () => void;
   exportFormat: ExportFormat;
   onExportFormatChange: (format: ExportFormat) => void;
   jpegQuality: number;
@@ -37,6 +78,7 @@ type Props = {
 export default function ControlsPanel({
   templateId,
   onTemplateChange,
+  onTemplateOverridesChange,
   exportFormat,
   onExportFormatChange,
   jpegQuality,
@@ -63,6 +105,11 @@ export default function ControlsPanel({
     ? batchState.jobs.filter((job) => job.status === 'error').length
     : 0;
 
+  const templateJson = getBuiltinTemplateJson(templateId);
+  const override = loadTemplateOverride(templateId);
+  const editableItems = templateJson ? collectEditableItems(templateJson.elements) : [];
+  const elementOverrides = override?.elements ?? {};
+
   return (
     <div className={ui.panelRoot}>
       <div className={ui.panelHeader}>
@@ -87,6 +134,144 @@ export default function ControlsPanel({
             ))}
           </select>
         </label>
+
+        {templateJson && editableItems.length ? (
+          <div className={ui.exifBox}>
+            <div className={ui.exifTitle}>模板编辑（Level 1）</div>
+            <div className={ui.hint}>这些设置保存在浏览器本地（localStorage）。</div>
+
+            {editableItems.map((item) => {
+              if (item.type === 'text') {
+                const el = item.el;
+                const ov = elementOverrides[el.id] ?? {};
+                const canToggle = Boolean(el.editable?.visible);
+                const canEditText = Boolean(el.editable?.text && el.bind.kind === 'literal');
+                const defaultText = el.bind.kind === 'literal' ? el.bind.value : '';
+                const currentText = typeof ov.text === 'string' ? ov.text : defaultText;
+
+                return (
+                  <div key={el.id} className={ui.field}>
+                    <div className={ui.label}>{el.label ?? el.id}</div>
+                    {canToggle ? (
+                      <label className={ui.checkboxRow}>
+                        <input
+                          type="checkbox"
+                          checked={ov.visible !== false}
+                          onChange={(e) => {
+                            setElementOverride(templateId, el.id, {
+                              visible: e.target.checked ? undefined : false,
+                            });
+                            onTemplateOverridesChange();
+                          }}
+                        />
+                        <span>显示</span>
+                      </label>
+                    ) : null}
+
+                    {canEditText ? (
+                      <input
+                        className={ui.select}
+                        type="text"
+                        value={currentText}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setElementOverride(templateId, el.id, {
+                            text: next === defaultText ? undefined : next,
+                          });
+                          onTemplateOverridesChange();
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                );
+              }
+
+              const el = item.el;
+              const ov = elementOverrides[el.id] ?? {};
+              const canToggle = Boolean(el.editable?.visible);
+              const canStyle = Boolean(el.editable?.logoStyle);
+              const canMonoColor = Boolean(el.editable?.monoColor);
+
+              const defaultStyle = el.style.style ?? 'color';
+              const currentStyle = (ov.logoStyle ?? defaultStyle) as 'color' | 'mono';
+              const defaultMonoColor = normalizeHexColor(el.style.monoColor, '#FFFFFF');
+              const currentMonoColor = normalizeHexColor(ov.monoColor, defaultMonoColor);
+
+              return (
+                <div key={el.id} className={ui.field}>
+                  <div className={ui.label}>{el.label ?? el.id}</div>
+
+                  {canToggle ? (
+                    <label className={ui.checkboxRow}>
+                      <input
+                        type="checkbox"
+                        checked={ov.visible !== false}
+                        onChange={(e) => {
+                          setElementOverride(templateId, el.id, {
+                            visible: e.target.checked ? undefined : false,
+                          });
+                          onTemplateOverridesChange();
+                        }}
+                      />
+                      <span>显示</span>
+                    </label>
+                  ) : null}
+
+                  {canStyle ? (
+                    <label className={ui.field}>
+                      <div className={ui.label}>风格</div>
+                      <select
+                        className={ui.select}
+                        value={currentStyle}
+                        onChange={(e) => {
+                          const next = e.target.value as 'color' | 'mono';
+                          setElementOverride(templateId, el.id, {
+                            logoStyle: next === defaultStyle ? undefined : next,
+                          });
+                          onTemplateOverridesChange();
+                        }}
+                      >
+                        <option value="color">彩色</option>
+                        <option value="mono">单色</option>
+                      </select>
+                    </label>
+                  ) : null}
+
+                  {currentStyle === 'mono' && canMonoColor ? (
+                    <label className={ui.field}>
+                      <div className={ui.label}>单色颜色</div>
+                      <input
+                        className={ui.colorInput}
+                        type="color"
+                        value={currentMonoColor}
+                        onChange={(e) => {
+                          const next = normalizeHexColor(e.target.value, '#FFFFFF');
+                          setElementOverride(templateId, el.id, {
+                            monoColor: next === defaultMonoColor ? undefined : next,
+                          });
+                          onTemplateOverridesChange();
+                        }}
+                      />
+                    </label>
+                  ) : null}
+                </div>
+              );
+            })}
+
+            <div className={ui.buttonRow}>
+              <button
+                className={ui.ghostButton}
+                type="button"
+                onClick={() => {
+                  saveTemplateOverride(templateId, null);
+                  onTemplateOverridesChange();
+                }}
+              >
+                重置模板设置
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <label className={ui.field}>
           <div className={ui.label}>格式</div>

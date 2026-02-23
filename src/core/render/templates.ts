@@ -1,7 +1,6 @@
 import { clamp } from '../utils/clamp';
 import type { MakerLogo } from '../brand/makerLogo';
 import type { ExifData } from '../exif/types';
-import classicFooterJson from './defs/classic_footer.json';
 import {
   buildWatermarkFields,
   formatAperture,
@@ -12,7 +11,8 @@ import {
   formatLensName,
   formatShutterSeconds,
 } from '../exif/format';
-import { createWatermarkTemplateFromJson } from './engine/wrapTemplate';
+import { getBuiltinTemplateJson } from './engine/builtins';
+import { createWatermarkTemplateFromDefinition } from './engine/wrapTemplate';
 import { fitText, rgba, roundRectPath } from './draw';
 
 export type TemplateId =
@@ -167,7 +167,7 @@ function drawMakerLogo(
   return { width, height };
 }
 
-const classicFooter = createWatermarkTemplateFromJson(classicFooterJson);
+const classicFooter = createWatermarkTemplateFromDefinition(getBuiltinTemplateJson('classic_footer')!);
 
 const ezmarkCard: WatermarkTemplate = {
   id: 'ezmark_card',

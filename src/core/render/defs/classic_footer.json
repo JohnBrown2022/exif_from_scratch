@@ -36,9 +36,11 @@
       "children": [
         {
           "id": "camera",
+          "label": "相机",
           "type": "text",
           "zone": "footer",
           "bind": { "kind": "cameraName", "fallback": "相机" },
+          "editable": { "visible": true },
           "style": {
             "font": "sans",
             "weight": 750,
@@ -50,10 +52,12 @@
         },
         {
           "id": "lens",
+          "label": "镜头",
           "type": "text",
           "zone": "footer",
           "bind": { "kind": "lensName" },
           "condition": { "hideWhenEmpty": true },
+          "editable": { "visible": true },
           "style": {
             "font": "sans",
             "weight": 650,
@@ -67,10 +71,12 @@
     },
     {
       "id": "settings",
+      "label": "参数",
       "type": "text",
       "zone": "footer",
       "grid": { "col": 8, "colSpan": 5, "row": 1, "rowSpan": 12 },
       "bind": { "kind": "settings", "joinWith": " | ", "fallback": "—" },
+      "editable": { "visible": true },
       "style": {
         "font": "sans",
         "weight": 700,
@@ -82,10 +88,12 @@
     },
     {
       "id": "maker_logo",
+      "label": "厂商 Logo",
       "type": "maker_logo",
       "zone": "footer",
       "grid": { "col": 6, "colSpan": 2, "row": 1, "rowSpan": 12 },
       "condition": { "showWhenMakerLogoPresent": true },
+      "editable": { "visible": true, "logoStyle": true, "monoColor": true },
       "style": {
         "style": "color",
         "opacity": 0.55,
@@ -97,11 +105,13 @@
     },
     {
       "id": "maker_text",
+      "label": "厂商文字",
       "type": "text",
       "zone": "footer",
       "grid": { "col": 6, "colSpan": 2, "row": 1, "rowSpan": 12 },
       "condition": { "showWhenMakerLogoMissing": true },
       "bind": { "kind": "makeUpper", "fallback": "EXIF" },
+      "editable": { "visible": true },
       "style": {
         "font": "sans",
         "weight": 700,

@@ -17,6 +17,7 @@ import type {
   TemplateJson,
   TextElement,
 } from './types';
+import { loadTemplateOverride, normalizeHexColor, type ElementOverride } from './overrides';
 import { resolveDimension } from './values';
 
 function rectCenterX(r: Rect): number {
@@ -69,6 +70,51 @@ function isElementVisible(el: ElementSpec, ctx: EngineContext): boolean {
   }
 
   return true;
+}
+
+type OverrideMap = Record<string, ElementOverride>;
+
+function applyOverridesToElement(el: ElementSpec, overrides: OverrideMap): ElementSpec | null {
+  const ov = overrides[el.id];
+
+  if (ov?.visible === false) {
+    const canHide =
+      (el.type === 'text' && el.editable?.visible) || (el.type === 'maker_logo' && el.editable?.visible);
+    if (canHide) return null;
+  }
+
+  if (el.type === 'text' && ov && el.editable?.text && el.bind.kind === 'literal' && typeof ov.text === 'string') {
+    const nextBind = { ...el.bind, value: ov.text } satisfies TextElement['bind'];
+    return { ...el, bind: nextBind };
+  }
+
+  if (el.type === 'maker_logo' && ov) {
+    const nextStyle: LogoStyle = { ...el.style };
+    if (ov.logoStyle && el.editable?.logoStyle) nextStyle.style = ov.logoStyle;
+    if (ov.monoColor && el.editable?.monoColor) nextStyle.monoColor = normalizeHexColor(ov.monoColor, '#FFFFFF');
+    return { ...el, style: nextStyle };
+  }
+
+  if (el.type === 'stack') {
+    const children = el.children
+      .map((child) => applyOverridesToElement(child, overrides))
+      .filter((child): child is ElementSpec => Boolean(child));
+    return { ...el, children };
+  }
+
+  return el;
+}
+
+function isMakerLogoSuppressed(elements: ElementSpec[], overrides: OverrideMap): boolean {
+  for (const el of elements) {
+    if (el.type === 'maker_logo') {
+      const ov = overrides[el.id];
+      if (el.editable?.visible && ov?.visible === false) return true;
+      continue;
+    }
+    if (el.type === 'stack' && isMakerLogoSuppressed(el.children, overrides)) return true;
+  }
+  return false;
 }
 
 const monoLogoCache = new Map<string, HTMLCanvasElement>();
@@ -385,6 +431,9 @@ export function renderTemplateLayer(
   layer: 'backdrop' | 'overlay',
   input: RenderLayerInput,
 ) {
+  const overrides = loadTemplateOverride(template.id);
+  const elementOverrides = (overrides?.elements ?? {}) as OverrideMap;
+
   const zoneContext: EngineContext['zones'] = {};
   for (const [zoneId, zoneRect] of Object.entries(zones)) {
     const gridSpec = template.zones?.[zoneId]?.grid;
@@ -392,11 +441,13 @@ export function renderTemplateLayer(
     zoneContext[zoneId] = { rect: zoneRect, grid: { cols: resolved.cols, rows: resolved.rows, padding: resolved.padding } };
   }
 
+  const makerLogo = isMakerLogoSuppressed(template.elements, elementOverrides) ? null : input.makerLogo;
+
   const ctx: EngineContext = {
     width: zones.canvas?.width ?? 0,
     height: zones.canvas?.height ?? 0,
     exif: input.exif,
-    makerLogo: input.makerLogo,
+    makerLogo,
     palette: input.palette,
     scale,
     zones: zoneContext,
@@ -407,8 +458,12 @@ export function renderTemplateLayer(
   for (const el of elements) {
     const zone = ctx.zones[el.zone];
     if (!zone) continue;
+
     const resolved = resolveGrid(zone.rect, template.zones?.[el.zone]?.grid, scale);
     const box = el.grid ? rectFromGrid(resolved, el.grid) : zone.rect;
-    renderElement(ctx2d, el, box, ctx);
+
+    const patched = applyOverridesToElement(el, elementOverrides);
+    if (!patched) continue;
+    renderElement(ctx2d, patched, box, ctx);
   }
 }

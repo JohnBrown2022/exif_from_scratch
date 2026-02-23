@@ -33,6 +33,7 @@ export default function App() {
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
 
   const [templateId, setTemplateId] = useState<TemplateId>('bottom_bar');
+  const [templateRenderRevision, setTemplateRenderRevision] = useState(0);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('jpeg');
   const [jpegQuality, setJpegQuality] = useState<number>(0.92);
   const [maxEdge, setMaxEdge] = useState<number | 'original'>('original');
@@ -261,6 +262,7 @@ export default function App() {
           <PreviewPanel
             file={selectedFile}
             templateId={templateId}
+            renderRevision={templateRenderRevision}
             exif={selectedExif}
             exifError={selectedExifError}
             isReadingExif={isReadingExif}
@@ -273,6 +275,7 @@ export default function App() {
           <ControlsPanel
             templateId={templateId}
             onTemplateChange={setTemplateId}
+            onTemplateOverridesChange={() => setTemplateRenderRevision((prev) => prev + 1)}
             exportFormat={exportFormat}
             onExportFormatChange={setExportFormat}
             jpegQuality={jpegQuality}

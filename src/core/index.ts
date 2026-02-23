@@ -10,6 +10,9 @@ export * from './brand/makerLogo';
 
 export * from './render/templates';
 export * from './render/renderer';
+export * from './render/engine/builtins';
+export * from './render/engine/overrides';
+export type { ElementSpec, MakerLogoElement, TemplateJson, TextElement } from './render/engine/types';
 
 export * from './export/exportWatermarked';
 export * from './export/download';

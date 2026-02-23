@@ -121,6 +121,7 @@ export type DividerElement = {
 
 export type TextElement = {
   id: string;
+  label?: string;
   type: 'text';
   layer?: 'backdrop' | 'overlay';
   zone: string;
@@ -130,11 +131,13 @@ export type TextElement = {
   condition?: ConditionSpec;
   editable?: {
     visible?: boolean;
+    text?: boolean;
   };
 };
 
 export type MakerLogoElement = {
   id: string;
+  label?: string;
   type: 'maker_logo';
   layer?: 'backdrop' | 'overlay';
   zone: string;
