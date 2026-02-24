@@ -185,6 +185,9 @@
 }
 
 .form {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
   padding: 14px;
   display: flex;
   flex-direction: column;

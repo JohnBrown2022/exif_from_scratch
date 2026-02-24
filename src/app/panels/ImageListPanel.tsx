@@ -10,6 +10,8 @@ type Props = {
   selectedIndex: number;
   onSelect: (index: number) => void;
   onImport: () => void;
+  onRemoveSelected: () => void;
+  onClearAll: () => void;
   onFilesDropped: (files: FileList) => void;
 };
 
@@ -18,6 +20,8 @@ export default function ImageListPanel({
   selectedIndex,
   onSelect,
   onImport,
+  onRemoveSelected,
+  onClearAll,
   onFilesDropped,
 }: Props) {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -53,9 +57,32 @@ export default function ImageListPanel({
           <div className={ui.panelTitle}>图片</div>
           <div className={ui.panelSubtitle}>{description}</div>
         </div>
-        <button className={ui.ghostButton} type="button" onClick={onImport}>
-          添加
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className={ui.ghostButton} type="button" onClick={onImport}>
+            添加
+          </button>
+          <button
+            className={ui.ghostButton}
+            type="button"
+            disabled={images.length === 0}
+            onClick={() => {
+              onRemoveSelected();
+            }}
+          >
+            删除
+          </button>
+          <button
+            className={ui.ghostButton}
+            type="button"
+            disabled={images.length === 0}
+            onClick={() => {
+              if (!window.confirm('清空所有已导入图片？')) return;
+              onClearAll();
+            }}
+          >
+            清空
+          </button>
+        </div>
       </div>
 
       {isDragOver ? (
