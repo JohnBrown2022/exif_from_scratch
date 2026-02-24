@@ -351,8 +351,11 @@ function drawMakerLogo(ctx2d: CanvasRenderingContext2D, style: LogoStyle, box: R
   const logo = ctx.makerLogo;
   if (!logo) return;
 
-  const maxW = resolveDimension(style.maxWidth, ctx.scale, box.width);
-  const maxH = resolveDimension(style.maxHeight, ctx.scale, box.height);
+  // Never allow the logo to exceed its placement box; otherwise wide logos can overlap other elements
+  // when templates specify a larger maxWidth/maxHeight than the grid cell.
+  const maxW = Math.min(box.width, resolveDimension(style.maxWidth, ctx.scale, box.width));
+  const maxH = Math.min(box.height, resolveDimension(style.maxHeight, ctx.scale, box.height));
+  if (maxW <= 0 || maxH <= 0) return;
 
   const scale = Math.min(maxW / logo.width, maxH / logo.height, 1);
   const drawW = Math.max(1, Math.round(logo.width * scale));
