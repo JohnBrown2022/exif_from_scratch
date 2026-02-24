@@ -1,16 +1,13 @@
 import { useMemo, useState } from 'react';
 
 import panel from '../Panels.module.css';
-import ui from '../../ui/ui.module.css';
 import { Tabs, type TabItem } from '../../ui/Tabs';
 import type { BatchUpdate, ExifData, ExportFormat, JpegBackgroundMode, TemplateId } from '../../../core';
 
-import { BatchTab } from './BatchTab';
 import { ExportTab } from './ExportTab';
-import { LayoutTab } from './LayoutTab';
-import { TemplateTab } from './TemplateTab';
+import { StyleTab } from './StyleTab';
 
-type TabId = 'export' | 'template' | 'layout' | 'batch';
+type TabId = 'style' | 'export';
 
 type Props = {
   templateId: TemplateId;
@@ -47,17 +44,19 @@ type Props = {
 };
 
 export default function InspectorPanel(props: Props) {
-  const [tab, setTab] = useState<TabId>('export');
+  const [tab, setTab] = useState<TabId>('style');
 
   const failedCount = props.batchState ? props.batchState.jobs.filter((job) => job.status === 'error').length : 0;
-  const batchBadge = props.batchState?.running ? `${props.batchState.completed}/${props.batchState.total}` : failedCount ? failedCount : undefined;
+  const batchBadge = props.batchState?.running
+    ? `${props.batchState.completed}/${props.batchState.total}`
+    : failedCount
+      ? failedCount
+      : undefined;
 
   const items = useMemo<TabItem<TabId>[]>(
     () => [
-      { id: 'export', label: '导出' },
-      { id: 'template', label: '模板' },
-      { id: 'layout', label: '布局' },
-      { id: 'batch', label: '批量', badge: batchBadge },
+      { id: 'style', label: '样式' },
+      { id: 'export', label: '导出', badge: batchBadge },
     ],
     [batchBadge],
   );
@@ -67,15 +66,25 @@ export default function InspectorPanel(props: Props) {
       <div className={panel.panelHeader}>
         <div>
           <div className={panel.panelTitle}>设置</div>
-          <div className={panel.panelSubtitle}>更少的默认项；高级能力收起。</div>
         </div>
       </div>
 
       <div className={panel.form}>
         <Tabs value={tab} items={items} onChange={setTab} idPrefix="inspector" ariaLabel="设置面板 Tabs" />
-        <div className={ui.muted} style={{ fontSize: 12 }}>
-          提示：所有模板编辑设置都保存在本机浏览器（localStorage）。
-        </div>
+
+        {tab === 'style' ? (
+          <div role="tabpanel" id="panel-inspector-style" aria-labelledby="tab-inspector-style">
+            <StyleTab
+              templateId={props.templateId}
+              onTemplateChange={props.onTemplateChange}
+              onTemplateOverridesChange={props.onTemplateOverridesChange}
+              hasSelection={props.hasSelection}
+              exif={props.exif}
+              exifError={props.exifError}
+              isReadingExif={props.isReadingExif}
+            />
+          </div>
+        ) : null}
 
         {tab === 'export' ? (
           <div role="tabpanel" id="panel-inspector-export" aria-labelledby="tab-inspector-export">
@@ -99,35 +108,7 @@ export default function InspectorPanel(props: Props) {
               exportStatus={props.exportStatus}
               onExportSelected={props.onExportSelected}
               onExportAll={props.onExportAll}
-            />
-          </div>
-        ) : null}
-
-        {tab === 'template' ? (
-          <div role="tabpanel" id="panel-inspector-template" aria-labelledby="tab-inspector-template">
-            <TemplateTab
-              templateId={props.templateId}
-              onTemplateChange={props.onTemplateChange}
-              onTemplateOverridesChange={props.onTemplateOverridesChange}
-              hasSelection={props.hasSelection}
-              exif={props.exif}
-              exifError={props.exifError}
-              isReadingExif={props.isReadingExif}
-            />
-          </div>
-        ) : null}
-
-        {tab === 'layout' ? (
-          <div role="tabpanel" id="panel-inspector-layout" aria-labelledby="tab-inspector-layout">
-            <LayoutTab templateId={props.templateId} onTemplateOverridesChange={props.onTemplateOverridesChange} />
-          </div>
-        ) : null}
-
-        {tab === 'batch' ? (
-          <div role="tabpanel" id="panel-inspector-batch" aria-labelledby="tab-inspector-batch">
-            <BatchTab
               batchState={props.batchState}
-              isExporting={props.isExporting}
               onCancelBatch={props.onCancelBatch}
               onRetryFailed={props.onRetryFailed}
             />
