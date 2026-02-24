@@ -30,6 +30,51 @@ export default function App() {
   const [jpegBackgroundMode, setJpegBackgroundMode] = useState<JpegBackgroundMode>('color');
   const [blurRadius, setBlurRadius] = useState<number>(30);
 
+  const [swUpdateReady, setSwUpdateReady] = useState(false);
+  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+    if (!('serviceWorker' in navigator)) return;
+
+    let cancelled = false;
+
+    const onControllerChange = () => {
+      window.location.reload();
+    };
+
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => {
+        if (cancelled) return;
+        setSwRegistration(reg);
+
+        if (reg.waiting) setSwUpdateReady(true);
+
+        reg.addEventListener('updatefound', () => {
+          const worker = reg.installing;
+          if (!worker) return;
+
+          worker.addEventListener('statechange', () => {
+            if (cancelled) return;
+            if (worker.state !== 'installed') return;
+            if (!navigator.serviceWorker.controller) return;
+            setSwUpdateReady(true);
+          });
+        });
+      })
+      .catch(() => {
+        // Ignore SW registration errors (unsupported env / private mode).
+      });
+
+    return () => {
+      cancelled = true;
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+    };
+  }, []);
+
   const { settings: topologyWatermarkSettings, setSettings: setTopologyWatermarkSettings } = useTopologyWatermarkSettings();
   const updateTopologyWatermarkSettings = (patch: Partial<TopologyWatermarkSettings>) => {
     setTopologyWatermarkSettings((prev) => ({ ...prev, ...patch }));
@@ -172,6 +217,19 @@ export default function App() {
         </div>
 
         <div className={styles.headerActions}>
+          {swUpdateReady ? (
+            <button
+              className={styles.updateButton}
+              type="button"
+              onClick={() => {
+                const waiting = swRegistration?.waiting;
+                if (!waiting) return;
+                waiting.postMessage({ type: 'SKIP_WAITING' });
+              }}
+            >
+              有更新 · 刷新
+            </button>
+          ) : null}
           <button className={styles.primaryButton} type="button" onClick={openFilePicker}>
             导入图片
           </button>
