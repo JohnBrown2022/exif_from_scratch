@@ -35,7 +35,12 @@ function getPreviewSize(width: number, height: number, maxEdge: number) {
   return { width: Math.round(width * scale), height: Math.round(height * scale) };
 }
 
+function getFileKey(file: File): string {
+  return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
 type LoadedImage = {
+  fileKey: string;
   decoded: DecodedImage;
   rotation: CanvasRotation | null;
   orientedWidth: number;
@@ -61,6 +66,8 @@ export default function PreviewPanel({
   const isRendering = isDecoding || isDrawing;
   const [loaded, setLoaded] = useState<LoadedImage | null>(null);
   const [makerLogo, setMakerLogo] = useState<Awaited<ReturnType<typeof loadMakerLogo>>>(null);
+
+  const activeFileKey = useMemo(() => (file ? getFileKey(file) : null), [file]);
 
   const subtitle = useMemo(() => {
     if (!file) return '选择一张图片开始';
@@ -89,6 +96,7 @@ export default function PreviewPanel({
         return;
       }
 
+      const fileKey = getFileKey(file);
       setIsDecoding(true);
       const [nextDecoded, rotation] = await Promise.all([decodeImage(file), readRotation(file)]);
       decoded = nextDecoded;
@@ -101,7 +109,7 @@ export default function PreviewPanel({
         const orientedHeight =
           rotation?.canvas && rotation.dimensionSwapped ? decoded.width : decoded.height;
 
-        setLoaded({ decoded, rotation, orientedWidth, orientedHeight });
+        setLoaded({ fileKey, decoded, rotation, orientedWidth, orientedHeight });
       } catch (err) {
         decoded.close();
         decoded = null;
@@ -152,7 +160,9 @@ export default function PreviewPanel({
     const canvas = canvasRef.current;
     if (!canvas) return () => { };
     if (!file) return () => { };
+    if (!activeFileKey) return () => { };
     if (!loaded) return () => { };
+    if (loaded.fileKey !== activeFileKey) return () => { };
 
     setIsDrawing(true);
     setRenderError(null);
@@ -185,7 +195,19 @@ export default function PreviewPanel({
     return () => {
       cancelled = true;
     };
-  }, [blurRadius, exif, exportFormat, file, jpegBackground, jpegBackgroundMode, loaded, makerLogo, renderRevision, templateId]);
+  }, [
+    activeFileKey,
+    blurRadius,
+    exif,
+    exportFormat,
+    file,
+    jpegBackground,
+    jpegBackgroundMode,
+    loaded,
+    makerLogo,
+    renderRevision,
+    templateId,
+  ]);
 
   return (
     <div className={ui.panelRoot}>

@@ -264,6 +264,8 @@ export function StyleTab({
     const hasBgArea = templateHasBackground(templateId);
     const showBgControls = exportFormat === 'jpeg' && hasBgArea;
 
+    const currentTemplate = WATERMARK_TEMPLATES.find((t) => t.id === templateId);
+
     return (
         <>
             {/* ─── 模板选择 ─── */}
@@ -274,6 +276,9 @@ export function StyleTab({
                     ))}
                 </select>
             </Field>
+            {currentTemplate?.description ? (
+                <div className={ui.hint}>{currentTemplate.description}</div>
+            ) : null}
 
             {isCustomedTemplate ? (
                 <div style={{ marginTop: 4 }}>
