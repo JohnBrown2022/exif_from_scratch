@@ -2,35 +2,70 @@
   "id": "classic_footer",
   "name": "经典白底栏",
   "description": "图 + 白色底栏（左右信息 + 中间品牌标记）。",
-  "scaleModel": { "designWidth": 1200, "min": 0.75, "max": 1.1 },
+  "scaleModel": {
+    "designWidth": 1200,
+    "min": 0.75,
+    "max": 1.1
+  },
   "layout": {
     "kind": "photo_plus_footer",
-    "footerHeight": { "designPx": 60, "minPx": 52, "maxPx": 86 },
+    "footerHeight": {
+      "designPx": 60
+    },
     "photoDrawMode": "contain"
   },
   "zones": {
     "footer": {
-      "grid": { "cols": 12, "rows": 12, "padding": { "designPx": 12, "minPx": 10, "maxPx": 22 } }
+      "grid": {
+        "cols": 12,
+        "rows": 12,
+        "padding": {
+          "designPx": 12,
+          "minPx": 10,
+          "maxPx": 22
+        }
+      }
     }
   },
-  "requirements": { "makerLogo": true },
+  "requirements": {
+    "makerLogo": true
+  },
   "elements": [
-    { "id": "footer_bg", "type": "rect", "zone": "footer", "style": { "fill": "rgba(255,255,255,0.98)" } },
+    {
+      "id": "footer_bg",
+      "type": "rect",
+      "zone": "footer",
+      "style": {
+        "fill": "rgba(255,255,255,0.98)"
+      }
+    },
     {
       "id": "footer_topline",
       "type": "divider",
       "zone": "footer",
       "orientation": "horizontal",
       "position": "top",
-      "style": { "color": "rgba(0,0,0,0.06)", "thickness": 1 }
+      "style": {
+        "color": "rgba(0,0,0,0.06)",
+        "thickness": 1
+      }
     },
     {
       "id": "left_stack",
       "type": "stack",
       "zone": "footer",
-      "grid": { "col": 1, "colSpan": 5, "row": 1, "rowSpan": 12 },
+      "grid": {
+        "col": 1,
+        "colSpan": 5,
+        "row": 1,
+        "rowSpan": 12
+      },
       "direction": "vertical",
-      "gap": { "designPx": 6, "minPx": 4, "maxPx": 10 },
+      "gap": {
+        "designPx": 6,
+        "minPx": 4,
+        "maxPx": 10
+      },
       "align": "left",
       "vAlign": "middle",
       "children": [
@@ -39,12 +74,21 @@
           "label": "相机",
           "type": "text",
           "zone": "footer",
-          "bind": { "kind": "cameraName", "fallback": "相机" },
-          "editable": { "visible": true },
+          "bind": {
+            "kind": "cameraName",
+            "fallback": "相机"
+          },
+          "editable": {
+            "visible": true
+          },
           "style": {
             "font": "sans",
             "weight": 750,
-            "size": { "designPx": 20, "minPx": 14, "maxPx": 22 },
+            "size": {
+              "designPx": 20,
+              "minPx": 14,
+              "maxPx": 22
+            },
             "color": "rgba(20,20,22,0.92)",
             "align": "left",
             "vAlign": "top"
@@ -55,13 +99,23 @@
           "label": "镜头",
           "type": "text",
           "zone": "footer",
-          "bind": { "kind": "lensName" },
-          "condition": { "hideWhenEmpty": true },
-          "editable": { "visible": true },
+          "bind": {
+            "kind": "lensName"
+          },
+          "condition": {
+            "hideWhenEmpty": true
+          },
+          "editable": {
+            "visible": true
+          },
           "style": {
             "font": "sans",
             "weight": 650,
-            "size": { "designPx": 13, "minPx": 10, "maxPx": 16 },
+            "size": {
+              "designPx": 13,
+              "minPx": 10,
+              "maxPx": 16
+            },
             "color": "rgba(60,60,66,0.62)",
             "align": "left",
             "vAlign": "top"
@@ -74,13 +128,28 @@
       "label": "参数",
       "type": "text",
       "zone": "footer",
-      "grid": { "col": 8, "colSpan": 5, "row": 1, "rowSpan": 12 },
-      "bind": { "kind": "settings", "joinWith": " | ", "fallback": "—" },
-      "editable": { "visible": true },
+      "grid": {
+        "col": 8,
+        "colSpan": 5,
+        "row": 1,
+        "rowSpan": 12
+      },
+      "bind": {
+        "kind": "settings",
+        "joinWith": " | ",
+        "fallback": "—"
+      },
+      "editable": {
+        "visible": true
+      },
       "style": {
         "font": "sans",
         "weight": 700,
-        "size": { "designPx": 14, "minPx": 11, "maxPx": 16 },
+        "size": {
+          "designPx": 14,
+          "minPx": 11,
+          "maxPx": 16
+        },
         "color": "rgba(20,20,22,0.9)",
         "align": "right",
         "vAlign": "middle"
@@ -91,16 +160,31 @@
       "label": "厂商 Logo",
       "type": "maker_logo",
       "zone": "footer",
-      "grid": { "col": 6, "colSpan": 2, "row": 1, "rowSpan": 12 },
-      "condition": { "showWhenMakerLogoPresent": true },
-      "editable": { "visible": true, "logoStyle": true, "monoColor": true },
+      "grid": {
+        "col": 6,
+        "colSpan": 2,
+        "row": 1,
+        "rowSpan": 12
+      },
+      "condition": {
+        "showWhenMakerLogoPresent": true
+      },
+      "editable": {
+        "visible": true,
+        "logoStyle": true,
+        "monoColor": true
+      },
       "style": {
         "style": "color",
         "opacity": 0.55,
         "align": "center",
         "vAlign": "middle",
-        "maxWidth": { "designPx": 216 },
-        "maxHeight": { "designPx": 22 }
+        "maxWidth": {
+          "designPx": 216
+        },
+        "maxHeight": {
+          "designPx": 22
+        }
       }
     },
     {
@@ -108,14 +192,30 @@
       "label": "厂商文字",
       "type": "text",
       "zone": "footer",
-      "grid": { "col": 6, "colSpan": 2, "row": 1, "rowSpan": 12 },
-      "condition": { "showWhenMakerLogoMissing": true },
-      "bind": { "kind": "makeUpper", "fallback": "EXIF" },
-      "editable": { "visible": true },
+      "grid": {
+        "col": 6,
+        "colSpan": 2,
+        "row": 1,
+        "rowSpan": 12
+      },
+      "condition": {
+        "showWhenMakerLogoMissing": true
+      },
+      "bind": {
+        "kind": "makeUpper",
+        "fallback": "EXIF"
+      },
+      "editable": {
+        "visible": true
+      },
       "style": {
         "font": "sans",
         "weight": 700,
-        "size": { "designPx": 12, "minPx": 10, "maxPx": 14 },
+        "size": {
+          "designPx": 12,
+          "minPx": 10,
+          "maxPx": 14
+        },
         "color": "rgba(20,20,22,0.46)",
         "align": "center",
         "vAlign": "middle"

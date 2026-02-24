@@ -1,5 +1,3 @@
-import { clamp } from '../../utils/clamp';
-
 import type { Dimension, ScaleModel } from './types';
 
 export function computeScale(baseWidth: number, baseHeight: number, model: ScaleModel): number {
@@ -10,8 +8,8 @@ export function computeScale(baseWidth: number, baseHeight: number, model: Scale
   const numerator = basis === 'minEdge' ? Math.min(width, height || width) : width;
   if (!Number.isFinite(numerator) || numerator <= 0) return 1;
 
-  const raw = numerator / model.designWidth;
-  return clamp(raw, model.min, model.max);
+  // Return raw scale — per-dimension minPx/maxPx provide fine-grained clamping.
+  return numerator / model.designWidth;
 }
 
 export function resolveDimension(value: Dimension | undefined, scale: number, fallback: number): number {
