@@ -8,6 +8,7 @@ import {
   type TemplateId,
   type TopologyWatermarkSettings,
 } from '../../core';
+import type { TemplateOverride } from '../../core/render/engine/overrides';
 
 export type PresetPayload = {
   templateId: TemplateId;
@@ -18,6 +19,7 @@ export type PresetPayload = {
   jpegBackgroundMode: JpegBackgroundMode;
   blurRadius: number;
   topologyWatermark: TopologyWatermarkSettings;
+  templateOverrides?: TemplateOverride | null;
 };
 
 export type PresetSlot = {
@@ -44,6 +46,7 @@ const DEFAULT_PAYLOAD: PresetPayload = {
   jpegBackgroundMode: 'color',
   blurRadius: 30,
   topologyWatermark: DEFAULT_TOPOLOGY_WATERMARK_SETTINGS,
+  templateOverrides: null,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -120,6 +123,10 @@ function sanitizePayload(raw: unknown): PresetPayload {
   const blurRadius = clamp(asFiniteNumber(raw.blurRadius) ?? base.blurRadius, 5, 80);
   const topologyWatermark = sanitizeTopologyWatermarkSettings(raw.topologyWatermark);
 
+  // templateOverrides is an opaque blob — we pass through whatever was saved.
+  // The overrides system already sanitizes on load via loadTemplateOverride.
+  const templateOverrides = isRecord(raw.templateOverrides) ? (raw.templateOverrides as TemplateOverride) : null;
+
   return {
     templateId,
     exportFormat,
@@ -129,6 +136,7 @@ function sanitizePayload(raw: unknown): PresetPayload {
     jpegBackgroundMode,
     blurRadius,
     topologyWatermark,
+    templateOverrides,
   };
 }
 

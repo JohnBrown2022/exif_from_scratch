@@ -8,6 +8,7 @@ import { useImages } from './hooks/useImages';
 import { useSelectedExif } from './hooks/useSelectedExif';
 import type { PresetPayload } from './hooks/usePresetSlots';
 import { fingerprintMd5Hex, type ExportFormat, type JpegBackgroundMode, type TemplateId, type TopologyWatermarkRenderOptions, type TopologyWatermarkSettings } from '../core';
+import { loadTemplateOverride, saveTemplateOverride } from '../core/render/engine/overrides';
 import { useTopologyWatermarkSettings } from './hooks/useTopologyWatermarkSettings';
 
 export default function App() {
@@ -96,16 +97,20 @@ export default function App() {
   const { exif: selectedExif, exifError: selectedExifError, isReadingExif } = useSelectedExif(selectedFile);
 
   const presetPayload = useMemo<PresetPayload>(
-    () => ({
-      templateId,
-      exportFormat,
-      jpegQuality,
-      maxEdge,
-      jpegBackground,
-      jpegBackgroundMode,
-      blurRadius,
-      topologyWatermark: topologyWatermarkSettings,
-    }),
+    () => {
+      void templateRenderRevision;
+      return {
+        templateId,
+        exportFormat,
+        jpegQuality,
+        maxEdge,
+        jpegBackground,
+        jpegBackgroundMode,
+        blurRadius,
+        topologyWatermark: topologyWatermarkSettings,
+        templateOverrides: loadTemplateOverride(templateId),
+      };
+    },
     [
       blurRadius,
       exportFormat,
@@ -115,6 +120,7 @@ export default function App() {
       maxEdge,
       templateId,
       topologyWatermarkSettings,
+      templateRenderRevision, // re-read overrides when they change
     ],
   );
 
@@ -127,6 +133,8 @@ export default function App() {
     setJpegBackgroundMode(payload.jpegBackgroundMode);
     setBlurRadius(payload.blurRadius);
     setTopologyWatermarkSettings(payload.topologyWatermark);
+    // Restore template overrides
+    saveTemplateOverride(payload.templateId, payload.templateOverrides ?? null);
     setTemplateRenderRevision((prev) => prev + 1);
   };
 

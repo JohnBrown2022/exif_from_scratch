@@ -2,6 +2,8 @@ import ui from '../../ui/ui.module.css';
 import { Field } from '../../ui/Field';
 import { Button } from '../../ui/Button';
 import type { BatchUpdate, ExportFormat } from '../../../core';
+import type { PresetPayload } from '../../hooks/usePresetSlots';
+import { PresetSlots } from './PresetSlots';
 
 type Props = {
   exportFormat: ExportFormat;
@@ -19,6 +21,8 @@ type Props = {
   batchState: BatchUpdate | null;
   onCancelBatch: () => void;
   onRetryFailed: () => void;
+  presetPayload: PresetPayload;
+  onApplyPresetPayload: (payload: PresetPayload) => void;
 };
 
 export function ExportTab({
@@ -37,6 +41,8 @@ export function ExportTab({
   batchState,
   onCancelBatch,
   onRetryFailed,
+  presetPayload,
+  onApplyPresetPayload,
 }: Props) {
   const failedCount = batchState ? batchState.jobs.filter((job) => job.status === 'error').length : 0;
   const total = batchState?.total ?? 0;
@@ -139,6 +145,9 @@ export function ExportTab({
           {failedCount > 6 ? <div className={ui.hint}>仅显示前 6 条</div> : null}
         </div>
       ) : null}
+
+      {/* ─── 预设槽位 ─── */}
+      <PresetSlots currentPayload={presetPayload} onApplyPayload={onApplyPresetPayload} />
     </>
   );
 }

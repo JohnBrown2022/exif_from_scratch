@@ -6,7 +6,6 @@ import type { BatchUpdate, ExifData, ExportFormat, JpegBackgroundMode, TemplateI
 import type { PresetPayload } from '../../hooks/usePresetSlots';
 
 import { ExportTab } from './ExportTab';
-import { PresetSlots } from './PresetSlots';
 import { StyleTab } from './StyleTab';
 
 type TabId = 'style' | 'export';
@@ -81,8 +80,6 @@ export default function InspectorPanel(props: Props) {
       </div>
 
       <div className={panel.form}>
-        <PresetSlots currentPayload={props.presetPayload} onApplyPayload={props.onApplyPresetPayload} />
-
         <Tabs value={tab} items={items} onChange={setTab} idPrefix="inspector" ariaLabel="设置面板 Tabs" />
 
         {tab === 'style' ? (
@@ -129,6 +126,8 @@ export default function InspectorPanel(props: Props) {
               batchState={props.batchState}
               onCancelBatch={props.onCancelBatch}
               onRetryFailed={props.onRetryFailed}
+              presetPayload={props.presetPayload}
+              onApplyPresetPayload={props.onApplyPresetPayload}
             />
           </div>
         ) : null}

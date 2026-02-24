@@ -604,19 +604,54 @@ export function StyleTab({
                         const ov = elementOverrides[el.id] ?? {};
                         const prefix = depth > 0 ? '↳ '.repeat(depth) : '';
                         const label = `${prefix}${getElementLabel(el)}`;
+                        const isVisible = ov.visible !== false;
+                        const isLogo = el.type === 'maker_logo';
+                        const canEditLogoStyle = isLogo && el.editable?.logoStyle;
+                        const canEditMonoColor = isLogo && el.editable?.monoColor;
+                        const currentLogoStyle = (ov.logoStyle ?? (isLogo ? el.style.style : undefined)) ?? 'color';
+                        const currentMonoColor = ov.monoColor ?? (isLogo ? el.style.monoColor : undefined) ?? '#FFFFFF';
 
                         return (
-                            <label key={el.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
-                                <input
-                                    type="checkbox"
-                                    checked={ov.visible !== false}
-                                    onChange={(e) => {
-                                        setElementOverride(templateId, el.id, { visible: e.target.checked ? undefined : false });
-                                        onTemplateOverridesChange();
-                                    }}
-                                />
-                                <span>{label}</span>
-                            </label>
+                            <div key={el.id}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={isVisible}
+                                        onChange={(e) => {
+                                            setElementOverride(templateId, el.id, { visible: e.target.checked ? undefined : false });
+                                            onTemplateOverridesChange();
+                                        }}
+                                    />
+                                    <span>{label}</span>
+                                </label>
+
+                                {isLogo && isVisible && (canEditLogoStyle || canEditMonoColor) ? (
+                                    <div style={{ display: 'flex', gap: 8, marginLeft: 28, marginTop: 4, marginBottom: 4 }}>
+                                        {canEditLogoStyle ? (
+                                            <Field label="风格">
+                                                <select className={ui.control} value={currentLogoStyle}
+                                                    onChange={(e) => {
+                                                        const next = e.target.value as 'color' | 'mono';
+                                                        setElementOverride(templateId, el.id, { logoStyle: next });
+                                                        onTemplateOverridesChange();
+                                                    }}>
+                                                    <option value="color">彩色</option>
+                                                    <option value="mono">单色</option>
+                                                </select>
+                                            </Field>
+                                        ) : null}
+                                        {canEditMonoColor && currentLogoStyle === 'mono' ? (
+                                            <Field label="单色颜色">
+                                                <input className={ui.control} type="color" value={currentMonoColor}
+                                                    onChange={(e) => {
+                                                        setElementOverride(templateId, el.id, { monoColor: e.target.value });
+                                                        onTemplateOverridesChange();
+                                                    }} />
+                                            </Field>
+                                        ) : null}
+                                    </div>
+                                ) : null}
+                            </div>
                         );
                     })}
                 </Accordion>
