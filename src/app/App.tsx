@@ -6,6 +6,7 @@ import InspectorPanel from './panels/InspectorPanel/InspectorPanel';
 import { useExportController } from './hooks/useExportController';
 import { useImages } from './hooks/useImages';
 import { useSelectedExif } from './hooks/useSelectedExif';
+import type { PresetPayload } from './hooks/usePresetSlots';
 import { fingerprintMd5Hex, type ExportFormat, type JpegBackgroundMode, type TemplateId, type TopologyWatermarkRenderOptions, type TopologyWatermarkSettings } from '../core';
 import { useTopologyWatermarkSettings } from './hooks/useTopologyWatermarkSettings';
 
@@ -93,6 +94,42 @@ export default function App() {
   }, [selectedFileKey, topologyMd5, topologyWatermarkSettings]);
 
   const { exif: selectedExif, exifError: selectedExifError, isReadingExif } = useSelectedExif(selectedFile);
+
+  const presetPayload = useMemo<PresetPayload>(
+    () => ({
+      templateId,
+      exportFormat,
+      jpegQuality,
+      maxEdge,
+      jpegBackground,
+      jpegBackgroundMode,
+      blurRadius,
+      topologyWatermark: topologyWatermarkSettings,
+    }),
+    [
+      blurRadius,
+      exportFormat,
+      jpegBackground,
+      jpegBackgroundMode,
+      jpegQuality,
+      maxEdge,
+      templateId,
+      topologyWatermarkSettings,
+    ],
+  );
+
+  const applyPresetPayload = (payload: PresetPayload) => {
+    setTemplateId(payload.templateId);
+    setExportFormat(payload.exportFormat);
+    setJpegQuality(payload.jpegQuality);
+    setMaxEdge(payload.maxEdge);
+    setJpegBackground(payload.jpegBackground);
+    setJpegBackgroundMode(payload.jpegBackgroundMode);
+    setBlurRadius(payload.blurRadius);
+    setTopologyWatermarkSettings(payload.topologyWatermark);
+    setTemplateRenderRevision((prev) => prev + 1);
+  };
+
   const exportController = useExportController({
     images,
     selectedFile,
@@ -196,6 +233,8 @@ export default function App() {
             topologyMd5={topologyMd5}
             topologyMd5Error={topologyMd5Error}
             isComputingTopologyMd5={isComputingTopologyMd5}
+            presetPayload={presetPayload}
+            onApplyPresetPayload={applyPresetPayload}
             hasSelection={Boolean(selectedFile)}
             imagesCount={images.length}
             isExporting={exportController.isExporting}

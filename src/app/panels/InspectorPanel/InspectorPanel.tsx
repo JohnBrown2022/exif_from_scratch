@@ -3,8 +3,10 @@ import { useMemo, useState } from 'react';
 import panel from '../Panels.module.css';
 import { Tabs, type TabItem } from '../../ui/Tabs';
 import type { BatchUpdate, ExifData, ExportFormat, JpegBackgroundMode, TemplateId, TopologyWatermarkSettings } from '../../../core';
+import type { PresetPayload } from '../../hooks/usePresetSlots';
 
 import { ExportTab } from './ExportTab';
+import { PresetSlots } from './PresetSlots';
 import { StyleTab } from './StyleTab';
 
 type TabId = 'style' | 'export';
@@ -32,6 +34,9 @@ type Props = {
   topologyMd5: string | null;
   topologyMd5Error: string | null;
   isComputingTopologyMd5: boolean;
+
+  presetPayload: PresetPayload;
+  onApplyPresetPayload: (payload: PresetPayload) => void;
 
   hasSelection: boolean;
   imagesCount: number;
@@ -76,6 +81,8 @@ export default function InspectorPanel(props: Props) {
       </div>
 
       <div className={panel.form}>
+        <PresetSlots currentPayload={props.presetPayload} onApplyPayload={props.onApplyPresetPayload} />
+
         <Tabs value={tab} items={items} onChange={setTab} idPrefix="inspector" ariaLabel="设置面板 Tabs" />
 
         {tab === 'style' ? (
