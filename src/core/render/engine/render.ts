@@ -16,9 +16,10 @@ import type {
   RectElement,
   StackElement,
   TemplateJson,
+  TextBinding,
   TextElement,
 } from './types';
-import { loadTemplateOverride, normalizeHexColor, type ElementOverride } from './overrides';
+import { loadTemplateOverride, normalizeHexColor, type ElementOverride, type ExifFieldKind } from './overrides';
 import { resolveDimension } from './values';
 
 function rectCenterX(r: Rect): number {
@@ -88,6 +89,22 @@ function isElementVisible(el: ElementSpec, ctx: EngineContext): boolean {
 
 type OverrideMap = Record<string, ElementOverride>;
 
+function applyHiddenFieldsToBinding(
+  bind: Extract<TextBinding, { kind: 'concat' }>,
+  hidden: Set<ExifFieldKind>,
+): Extract<TextBinding, { kind: 'concat' }> {
+  const filter = (part: TextBinding): TextBinding | null => {
+    if (part.kind === 'concat') {
+      return applyHiddenFieldsToBinding(part, hidden);
+    }
+    if (part.kind === 'literal') return part;
+    return hidden.has(part.kind) ? null : part;
+  };
+
+  const nextParts = (bind.parts ?? []).map(filter).filter((part): part is TextBinding => Boolean(part));
+  return { ...bind, parts: nextParts };
+}
+
 function applyOverridesToElement(
   el: ElementSpec,
   overrides: OverrideMap,
@@ -141,6 +158,16 @@ function applyOverridesToElement(
     const allowTextOverride = options?.allowAll || next.editable?.text;
     if (allowTextOverride && next.bind.kind === 'literal' && typeof ov.text === 'string') {
       const nextBind = { ...next.bind, value: ov.text } satisfies TextElement['bind'];
+      next = { ...next, bind: nextBind };
+    }
+  }
+
+  if (next.type === 'text' && ov?.hiddenFields?.length) {
+    const allowPartOverride = options?.allowAll || next.editable?.visible;
+    if (allowPartOverride && next.bind.kind === 'concat') {
+      const hidden = new Set(ov.hiddenFields);
+      const nextBind = applyHiddenFieldsToBinding(next.bind, hidden) satisfies TextElement['bind'];
+      if (nextBind.kind === 'concat' && nextBind.parts.length === 0) return null;
       next = { ...next, bind: nextBind };
     }
   }

@@ -1,5 +1,19 @@
 import { clamp } from '../../utils/clamp';
 
+export const EXIF_FIELD_KINDS = [
+  'cameraName',
+  'lensName',
+  'dateTime',
+  'makeUpper',
+  'settings',
+  'focalLength',
+  'aperture',
+  'shutter',
+  'iso',
+] as const;
+
+export type ExifFieldKind = (typeof EXIF_FIELD_KINDS)[number];
+
 export type GridOverride = {
   col: number;
   colSpan: number;
@@ -15,6 +29,7 @@ export type ElementOverride = {
   logoStyle?: 'color' | 'mono';
   monoColor?: string;
   text?: string;
+  hiddenFields?: ExifFieldKind[];
 };
 
 export type TemplateOverride = {
@@ -73,6 +88,14 @@ function sanitizeElementOverride(value: unknown): ElementOverride | null {
 
   if (typeof value.monoColor === 'string') next.monoColor = value.monoColor;
   if (typeof value.text === 'string') next.text = value.text;
+
+  if (Array.isArray(value.hiddenFields)) {
+    const hiddenFields = value.hiddenFields
+      .filter((v): v is string => typeof v === 'string')
+      .map((v) => asEnum(v, EXIF_FIELD_KINDS))
+      .filter((v): v is ExifFieldKind => Boolean(v));
+    if (hiddenFields.length) next.hiddenFields = Array.from(new Set(hiddenFields));
+  }
 
   return Object.keys(next).length ? next : null;
 }
@@ -137,6 +160,7 @@ export function setElementOverride(
   if (typeof next.logoStyle === 'undefined') delete next.logoStyle;
   if (typeof next.monoColor === 'undefined') delete next.monoColor;
   if (typeof next.text === 'undefined') delete next.text;
+  if (!next.hiddenFields || next.hiddenFields.length === 0) delete next.hiddenFields;
 
   if (Object.keys(next).length === 0) {
     delete elements[elementId];

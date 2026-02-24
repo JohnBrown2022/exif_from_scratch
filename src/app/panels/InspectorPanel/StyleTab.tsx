@@ -16,6 +16,7 @@ import {
     type ElementSpec,
     type ExifData,
     type ExportFormat,
+    type ExifFieldKind,
     type GridOverride,
     type JpegBackgroundMode,
     type TemplateId,
@@ -44,6 +45,37 @@ function templateHasBackground(templateId: TemplateId): boolean {
 
 const ALIGN_LABELS: Record<string, string> = { left: '左对齐', center: '居中', right: '右对齐' };
 const VALIGN_LABELS: Record<string, string> = { top: '顶部', middle: '居中', bottom: '底部' };
+
+const EXIF_FIELD_LABELS: Record<ExifFieldKind, string> = {
+    cameraName: '相机',
+    lensName: '镜头',
+    dateTime: '日期',
+    makeUpper: '厂商',
+    settings: '参数',
+    focalLength: '焦距',
+    aperture: '光圈',
+    shutter: '快门',
+    iso: 'ISO',
+};
+
+type TextBinding = Extract<ElementSpec, { type: 'text' }>['bind'];
+
+function listExifFieldKinds(bind: TextBinding): ExifFieldKind[] {
+    if (bind.kind === 'concat') return (bind.parts ?? []).flatMap(listExifFieldKinds);
+    if (bind.kind === 'literal') return [];
+    return [bind.kind as ExifFieldKind];
+}
+
+function uniqueStable<T>(items: T[]): T[] {
+    const seen = new Set<T>();
+    const out: T[] = [];
+    for (const item of items) {
+        if (seen.has(item)) continue;
+        seen.add(item);
+        out.push(item);
+    }
+    return out;
+}
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -228,7 +260,7 @@ export function StyleTab({
     const override = loadTemplateOverride(templateId);
     const elementOverrides = override?.elements ?? {};
 
-    const flatElements = templateJson ? flattenElements(templateJson.elements) : [];
+    const flatElements = useMemo(() => (templateJson ? flattenElements(templateJson.elements) : []), [templateJson]);
     const toggleable = flatElements.filter(({ el }) => canToggleVisible(el, isCustomedTemplate));
 
     const editableLiteralTexts = flatElements
@@ -265,6 +297,20 @@ export function StyleTab({
     const showBgControls = exportFormat === 'jpeg' && hasBgArea;
 
     const currentTemplate = WATERMARK_TEMPLATES.find((t) => t.id === templateId);
+
+    const concatFieldControls = useMemo(() => {
+        return flatElements
+            .map(({ el }) => el)
+            .filter(
+                (el): el is Extract<ElementSpec, { type: 'text' }> =>
+                    el.type === 'text' && el.bind.kind === 'concat' && canToggleVisible(el, isCustomedTemplate),
+            )
+            .map((el) => ({
+                el,
+                fields: uniqueStable(listExifFieldKinds(el.bind)).filter((kind) => Boolean(EXIF_FIELD_LABELS[kind])),
+            }))
+            .filter((item) => item.fields.length >= 2);
+    }, [flatElements, isCustomedTemplate]);
 
     return (
         <>
@@ -346,6 +392,52 @@ export function StyleTab({
                         );
                     })}
                 </div>
+            ) : null}
+
+            {/* ─── 组合字段（拆分控制） ─── */}
+            {concatFieldControls.length > 0 ? (
+                <Accordion title={`组合字段（可分别控制）`} defaultOpen={false}>
+                    <div className={ui.hint}>适用于“镜头/参数/日期”等组合行；隐藏某一项时仍保持原来的对齐与样式。</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {concatFieldControls.map(({ el, fields }) => {
+                            const hidden = new Set(elementOverrides[el.id]?.hiddenFields ?? []);
+                            return (
+                                <div key={el.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ fontSize: 12, fontWeight: 600 }}>{getElementLabel(el)}</span>
+                                        <span className={ui.muted} style={{ fontSize: 11 }}>
+                                            ({el.id})
+                                        </span>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                                        {fields.map((kind) => {
+                                            const label = EXIF_FIELD_LABELS[kind] ?? kind;
+                                            const checked = !hidden.has(kind);
+                                            return (
+                                                <label key={kind} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={checked}
+                                                        onChange={(e) => {
+                                                            const nextHidden = new Set(hidden);
+                                                            if (e.target.checked) nextHidden.delete(kind);
+                                                            else nextHidden.add(kind);
+                                                            const asArray = Array.from(nextHidden);
+                                                            setElementOverride(templateId, el.id, { hiddenFields: asArray.length ? asArray : undefined });
+                                                            onTemplateOverridesChange();
+                                                        }}
+                                                    />
+                                                    <span>{label}</span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </Accordion>
             ) : null}
 
             {/* ─── 元素开关（折叠） ─── */}
