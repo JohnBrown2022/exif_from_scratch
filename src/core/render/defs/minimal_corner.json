@@ -2,17 +2,37 @@
   "id": "minimal_corner",
   "name": "极简角标",
   "description": "不画背景，仅文字与轻微阴影。",
-  "scaleModel": { "designWidth": 1000, "min": 0.75, "max": 1.15, "basis": "minEdge" },
-  "layout": { "kind": "photo_only", "photoDrawMode": "contain" },
+  "scaleModel": {
+    "designWidth": 1000,
+    "min": 0.75,
+    "max": 1.15,
+    "basis": "minEdge"
+  },
+  "layout": {
+    "kind": "photo_only",
+    "photoDrawMode": "contain"
+  },
   "zones": {
     "corner": {
       "rect": {
         "of": "photo",
         "inset": {
-          "left": { "designPx": 30, "minPx": 16, "maxPx": 44 },
-          "right": { "designPx": 30, "minPx": 16, "maxPx": 44 },
-          "top": { "designPx": 30, "minPx": 16, "maxPx": 44 },
-          "bottom": { "designPx": 30, "minPx": 16, "maxPx": 44 }
+          "left": {
+            "designPx": 30,
+            "minPx": 16
+          },
+          "right": {
+            "designPx": 30,
+            "minPx": 16
+          },
+          "top": {
+            "designPx": 30,
+            "minPx": 16
+          },
+          "bottom": {
+            "designPx": 30,
+            "minPx": 16
+          }
         }
       }
     }
@@ -23,7 +43,10 @@
       "type": "stack",
       "zone": "corner",
       "direction": "vertical",
-      "gap": { "designPx": 8, "minPx": 6, "maxPx": 14 },
+      "gap": {
+        "designPx": 8,
+        "minPx": 6
+      },
       "align": "right",
       "vAlign": "bottom",
       "children": [
@@ -32,19 +55,33 @@
           "label": "相机",
           "type": "text",
           "zone": "corner",
-          "bind": { "kind": "cameraName", "fallback": "无 EXIF" },
-          "editable": { "visible": true },
+          "bind": {
+            "kind": "cameraName",
+            "fallback": "无 EXIF"
+          },
+          "editable": {
+            "visible": true
+          },
           "style": {
             "font": "sans",
             "weight": 650,
-            "size": { "designPx": 24, "minPx": 12, "maxPx": 26 },
+            "size": {
+              "designPx": 24,
+              "minPx": 12
+            },
             "color": "rgba(255,255,255,0.92)",
             "align": "right",
             "vAlign": "bottom",
             "shadow": {
               "color": "rgba(0,0,0,0.55)",
-              "blur": { "designPx": 18, "minPx": 10, "maxPx": 28 },
-              "offsetY": { "designPx": 4, "minPx": 3, "maxPx": 8 }
+              "blur": {
+                "designPx": 18,
+                "minPx": 10
+              },
+              "offsetY": {
+                "designPx": 4,
+                "minPx": 3
+              }
             }
           }
         },
@@ -55,22 +92,42 @@
           "zone": "corner",
           "bind": {
             "kind": "concat",
-            "parts": [{ "kind": "lensName" }, { "kind": "settings" }],
+            "parts": [
+              {
+                "kind": "lensName"
+              },
+              {
+                "kind": "settings"
+              }
+            ],
             "joinWith": " · "
           },
-          "condition": { "hideWhenEmpty": true },
-          "editable": { "visible": true },
+          "condition": {
+            "hideWhenEmpty": true
+          },
+          "editable": {
+            "visible": true
+          },
           "style": {
             "font": "sans",
             "weight": 500,
-            "size": { "designPx": 22, "minPx": 11, "maxPx": 24 },
+            "size": {
+              "designPx": 22,
+              "minPx": 11
+            },
             "color": "rgba(255,255,255,0.92)",
             "align": "right",
             "vAlign": "bottom",
             "shadow": {
               "color": "rgba(0,0,0,0.55)",
-              "blur": { "designPx": 18, "minPx": 10, "maxPx": 28 },
-              "offsetY": { "designPx": 4, "minPx": 3, "maxPx": 8 }
+              "blur": {
+                "designPx": 18,
+                "minPx": 10
+              },
+              "offsetY": {
+                "designPx": 4,
+                "minPx": 3
+              }
             }
           }
         },
@@ -79,20 +136,35 @@
           "label": "日期",
           "type": "text",
           "zone": "corner",
-          "bind": { "kind": "dateTime" },
-          "condition": { "hideWhenEmpty": true },
-          "editable": { "visible": true },
+          "bind": {
+            "kind": "dateTime"
+          },
+          "condition": {
+            "hideWhenEmpty": true
+          },
+          "editable": {
+            "visible": true
+          },
           "style": {
             "font": "sans",
             "weight": 650,
-            "size": { "designPx": 24, "minPx": 12, "maxPx": 26 },
+            "size": {
+              "designPx": 24,
+              "minPx": 12
+            },
             "color": "rgba(255,255,255,0.92)",
             "align": "right",
             "vAlign": "bottom",
             "shadow": {
               "color": "rgba(0,0,0,0.55)",
-              "blur": { "designPx": 18, "minPx": 10, "maxPx": 28 },
-              "offsetY": { "designPx": 4, "minPx": 3, "maxPx": 8 }
+              "blur": {
+                "designPx": 18,
+                "minPx": 10
+              },
+              "offsetY": {
+                "designPx": 4,
+                "minPx": 3
+              }
             }
           }
         }
@@ -100,4 +172,3 @@
     }
   ]
 }
-

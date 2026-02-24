@@ -2,8 +2,16 @@
   "id": "lightroom_footer",
   "name": "Lightroom 底栏",
   "description": "底部三段信息（左参数 / 中机身镜头 / 右日期）。",
-  "scaleModel": { "designWidth": 1400, "min": 0.75, "max": 1.15, "basis": "minEdge" },
-  "layout": { "kind": "photo_only", "photoDrawMode": "contain" },
+  "scaleModel": {
+    "designWidth": 1400,
+    "min": 0.75,
+    "max": 1.15,
+    "basis": "minEdge"
+  },
+  "layout": {
+    "kind": "photo_only",
+    "photoDrawMode": "contain"
+  },
   "zones": {
     "bar": {
       "rect": {
@@ -12,10 +20,20 @@
           "left": 0,
           "right": 0,
           "bottom": 0,
-          "height": { "designPx": 86, "minPx": 64, "maxPx": 140 }
+          "height": {
+            "designPx": 86,
+            "minPx": 64
+          }
         }
       },
-      "grid": { "cols": 12, "rows": 12, "padding": { "designPx": 18, "minPx": 14, "maxPx": 28 } }
+      "grid": {
+        "cols": 12,
+        "rows": 12,
+        "padding": {
+          "designPx": 18,
+          "minPx": 14
+        }
+      }
     }
   },
   "elements": [
@@ -31,8 +49,14 @@
           "x1": 0,
           "y1": 1,
           "stops": [
-            { "offset": 0, "color": "rgba(0,0,0,0.05)" },
-            { "offset": 1, "color": "rgba(0,0,0,0.42)" }
+            {
+              "offset": 0,
+              "color": "rgba(0,0,0,0.05)"
+            },
+            {
+              "offset": 1,
+              "color": "rgba(0,0,0,0.42)"
+            }
           ]
         }
       }
@@ -42,13 +66,27 @@
       "label": "参数",
       "type": "text",
       "zone": "bar",
-      "grid": { "col": 1, "colSpan": 4, "row": 1, "rowSpan": 12 },
-      "bind": { "kind": "settings", "joinWith": "  ", "fallback": "—" },
-      "editable": { "visible": true },
+      "grid": {
+        "col": 1,
+        "colSpan": 4,
+        "row": 1,
+        "rowSpan": 12
+      },
+      "bind": {
+        "kind": "settings",
+        "joinWith": "  ",
+        "fallback": "—"
+      },
+      "editable": {
+        "visible": true
+      },
       "style": {
         "font": "sans",
         "weight": 650,
-        "size": { "designPx": 15, "minPx": 12, "maxPx": 18 },
+        "size": {
+          "designPx": 15,
+          "minPx": 12
+        },
         "color": "rgba(255,255,255,0.92)",
         "align": "left",
         "vAlign": "middle"
@@ -59,18 +97,35 @@
       "label": "机身/镜头",
       "type": "text",
       "zone": "bar",
-      "grid": { "col": 5, "colSpan": 4, "row": 1, "rowSpan": 12 },
+      "grid": {
+        "col": 5,
+        "colSpan": 4,
+        "row": 1,
+        "rowSpan": 12
+      },
       "bind": {
         "kind": "concat",
-        "parts": [{ "kind": "cameraName" }, { "kind": "lensName" }],
+        "parts": [
+          {
+            "kind": "cameraName"
+          },
+          {
+            "kind": "lensName"
+          }
+        ],
         "joinWith": " · ",
         "fallback": "—"
       },
-      "editable": { "visible": true },
+      "editable": {
+        "visible": true
+      },
       "style": {
         "font": "sans",
         "weight": 650,
-        "size": { "designPx": 15, "minPx": 12, "maxPx": 18 },
+        "size": {
+          "designPx": 15,
+          "minPx": 12
+        },
         "color": "rgba(255,255,255,0.92)",
         "align": "center",
         "vAlign": "middle"
@@ -81,14 +136,28 @@
       "label": "日期",
       "type": "text",
       "zone": "bar",
-      "grid": { "col": 9, "colSpan": 4, "row": 1, "rowSpan": 12 },
-      "bind": { "kind": "dateTime" },
-      "condition": { "hideWhenEmpty": true },
-      "editable": { "visible": true },
+      "grid": {
+        "col": 9,
+        "colSpan": 4,
+        "row": 1,
+        "rowSpan": 12
+      },
+      "bind": {
+        "kind": "dateTime"
+      },
+      "condition": {
+        "hideWhenEmpty": true
+      },
+      "editable": {
+        "visible": true
+      },
       "style": {
         "font": "sans",
         "weight": 650,
-        "size": { "designPx": 15, "minPx": 12, "maxPx": 18 },
+        "size": {
+          "designPx": 15,
+          "minPx": 12
+        },
         "color": "rgba(255,255,255,0.92)",
         "align": "right",
         "vAlign": "middle"
@@ -96,4 +165,3 @@
     }
   ]
 }
-

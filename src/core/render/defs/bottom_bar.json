@@ -2,8 +2,16 @@
   "id": "bottom_bar",
   "name": "底部黑条",
   "description": "信息集中展示，适合大多数照片。",
-  "scaleModel": { "designWidth": 1000, "min": 0.75, "max": 1.15, "basis": "minEdge" },
-  "layout": { "kind": "photo_only", "photoDrawMode": "contain" },
+  "scaleModel": {
+    "designWidth": 1000,
+    "min": 0.75,
+    "max": 1.15,
+    "basis": "minEdge"
+  },
+  "layout": {
+    "kind": "photo_only",
+    "photoDrawMode": "contain"
+  },
   "zones": {
     "bar": {
       "rect": {
@@ -12,10 +20,20 @@
           "left": 0,
           "right": 0,
           "bottom": 0,
-          "height": { "designPx": 140, "minPx": 88, "maxPx": 220 }
+          "height": {
+            "designPx": 140,
+            "minPx": 88
+          }
         }
       },
-      "grid": { "cols": 12, "rows": 12, "padding": { "designPx": 16, "minPx": 10, "maxPx": 26 } }
+      "grid": {
+        "cols": 12,
+        "rows": 12,
+        "padding": {
+          "designPx": 16,
+          "minPx": 10
+        }
+      }
     }
   },
   "elements": [
@@ -23,15 +41,25 @@
       "id": "bar_bg",
       "type": "rect",
       "zone": "bar",
-      "style": { "fill": "rgba(0,0,0,0.55)" }
+      "style": {
+        "fill": "rgba(0,0,0,0.55)"
+      }
     },
     {
       "id": "lines",
       "type": "stack",
       "zone": "bar",
-      "grid": { "col": 1, "colSpan": 12, "row": 1, "rowSpan": 12 },
+      "grid": {
+        "col": 1,
+        "colSpan": 12,
+        "row": 1,
+        "rowSpan": 12
+      },
       "direction": "vertical",
-      "gap": { "designPx": 8, "minPx": 5, "maxPx": 12 },
+      "gap": {
+        "designPx": 8,
+        "minPx": 5
+      },
       "align": "left",
       "vAlign": "top",
       "children": [
@@ -40,12 +68,20 @@
           "label": "相机",
           "type": "text",
           "zone": "bar",
-          "bind": { "kind": "cameraName", "fallback": "无 EXIF" },
-          "editable": { "visible": true },
+          "bind": {
+            "kind": "cameraName",
+            "fallback": "无 EXIF"
+          },
+          "editable": {
+            "visible": true
+          },
           "style": {
             "font": "sans",
             "weight": 650,
-            "size": { "designPx": 32, "minPx": 14, "maxPx": 34 },
+            "size": {
+              "designPx": 32,
+              "minPx": 14
+            },
             "lineHeight": 1.05,
             "color": "rgba(255,255,255,0.94)",
             "align": "left",
@@ -59,15 +95,29 @@
           "zone": "bar",
           "bind": {
             "kind": "concat",
-            "parts": [{ "kind": "lensName" }, { "kind": "settings" }],
+            "parts": [
+              {
+                "kind": "lensName"
+              },
+              {
+                "kind": "settings"
+              }
+            ],
             "joinWith": " · "
           },
-          "condition": { "hideWhenEmpty": true },
-          "editable": { "visible": true },
+          "condition": {
+            "hideWhenEmpty": true
+          },
+          "editable": {
+            "visible": true
+          },
           "style": {
             "font": "sans",
             "weight": 500,
-            "size": { "designPx": 28, "minPx": 12, "maxPx": 30 },
+            "size": {
+              "designPx": 28,
+              "minPx": 12
+            },
             "lineHeight": 1.05,
             "color": "rgba(255,255,255,0.94)",
             "align": "left",
@@ -79,13 +129,22 @@
           "label": "日期",
           "type": "text",
           "zone": "bar",
-          "bind": { "kind": "dateTime" },
-          "condition": { "hideWhenEmpty": true },
-          "editable": { "visible": true },
+          "bind": {
+            "kind": "dateTime"
+          },
+          "condition": {
+            "hideWhenEmpty": true
+          },
+          "editable": {
+            "visible": true
+          },
           "style": {
             "font": "sans",
             "weight": 500,
-            "size": { "designPx": 26, "minPx": 12, "maxPx": 28 },
+            "size": {
+              "designPx": 26,
+              "minPx": 12
+            },
             "lineHeight": 1.05,
             "color": "rgba(255,255,255,0.94)",
             "align": "left",

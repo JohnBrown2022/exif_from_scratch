@@ -22,8 +22,7 @@
         "rows": 12,
         "padding": {
           "designPx": 20,
-          "minPx": 14,
-          "maxPx": 28
+          "minPx": 14
         }
       }
     }
@@ -75,8 +74,7 @@
       "direction": "vertical",
       "gap": {
         "designPx": 6,
-        "minPx": 4,
-        "maxPx": 10
+        "minPx": 4
       },
       "align": "left",
       "vAlign": "top",
@@ -98,8 +96,7 @@
             "weight": 800,
             "size": {
               "designPx": 18,
-              "minPx": 14,
-              "maxPx": 22
+              "minPx": 14
             },
             "color": "rgba(0,0,0,0.86)",
             "align": "left",
@@ -125,8 +122,7 @@
             "weight": 650,
             "size": {
               "designPx": 12,
-              "minPx": 10,
-              "maxPx": 15
+              "minPx": 10
             },
             "color": "rgba(0,0,0,0.42)",
             "align": "left",
@@ -148,8 +144,7 @@
       "direction": "vertical",
       "gap": {
         "designPx": 6,
-        "minPx": 4,
-        "maxPx": 10
+        "minPx": 4
       },
       "align": "left",
       "vAlign": "top",
@@ -171,8 +166,7 @@
             "weight": 800,
             "size": {
               "designPx": 18,
-              "minPx": 14,
-              "maxPx": 22
+              "minPx": 14
             },
             "color": "rgba(0,0,0,0.86)",
             "align": "left",
@@ -197,8 +191,7 @@
             "weight": 650,
             "size": {
               "designPx": 12,
-              "minPx": 10,
-              "maxPx": 15
+              "minPx": 10
             },
             "color": "rgba(0,0,0,0.42)",
             "align": "left",
@@ -233,13 +226,11 @@
         "vAlign": "middle",
         "maxWidth": {
           "designPx": 200,
-          "minPx": 120,
-          "maxPx": 260
+          "minPx": 120
         },
         "maxHeight": {
           "designPx": 56,
-          "minPx": 30,
-          "maxPx": 90
+          "minPx": 30
         }
       }
     },
@@ -269,8 +260,7 @@
         "weight": 900,
         "size": {
           "designPx": 22,
-          "minPx": 18,
-          "maxPx": 28
+          "minPx": 18
         },
         "color": "rgba(0,0,0,0.52)",
         "align": "right",

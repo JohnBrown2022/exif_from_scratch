@@ -2,8 +2,16 @@
   "id": "shot_on",
   "name": "Shot on",
   "description": "底部标语 + 参数（适合社交分享）。",
-  "scaleModel": { "designWidth": 1400, "min": 0.75, "max": 1.15, "basis": "minEdge" },
-  "layout": { "kind": "photo_only", "photoDrawMode": "contain" },
+  "scaleModel": {
+    "designWidth": 1400,
+    "min": 0.75,
+    "max": 1.15,
+    "basis": "minEdge"
+  },
+  "layout": {
+    "kind": "photo_only",
+    "photoDrawMode": "contain"
+  },
   "zones": {
     "bar": {
       "rect": {
@@ -12,10 +20,20 @@
           "left": 0,
           "right": 0,
           "bottom": 0,
-          "height": { "designPx": 84, "minPx": 64, "maxPx": 140 }
+          "height": {
+            "designPx": 84,
+            "minPx": 64
+          }
         }
       },
-      "grid": { "cols": 12, "rows": 12, "padding": { "designPx": 18, "minPx": 14, "maxPx": 28 } }
+      "grid": {
+        "cols": 12,
+        "rows": 12,
+        "padding": {
+          "designPx": 18,
+          "minPx": 14
+        }
+      }
     }
   },
   "elements": [
@@ -23,15 +41,25 @@
       "id": "bar_bg",
       "type": "rect",
       "zone": "bar",
-      "style": { "fill": "rgba(0,0,0,0.46)" }
+      "style": {
+        "fill": "rgba(0,0,0,0.46)"
+      }
     },
     {
       "id": "copy_stack",
       "type": "stack",
       "zone": "bar",
-      "grid": { "col": 1, "colSpan": 12, "row": 1, "rowSpan": 12 },
+      "grid": {
+        "col": 1,
+        "colSpan": 12,
+        "row": 1,
+        "rowSpan": 12
+      },
       "direction": "vertical",
-      "gap": { "designPx": 8, "minPx": 6, "maxPx": 12 },
+      "gap": {
+        "designPx": 8,
+        "minPx": 6
+      },
       "align": "left",
       "vAlign": "top",
       "children": [
@@ -43,17 +71,28 @@
           "bind": {
             "kind": "concat",
             "parts": [
-              { "kind": "literal", "value": "SHOT ON " },
-              { "kind": "cameraName", "fallback": "Unknown Camera" }
+              {
+                "kind": "literal",
+                "value": "SHOT ON "
+              },
+              {
+                "kind": "cameraName",
+                "fallback": "Unknown Camera"
+              }
             ],
             "joinWith": "",
             "fallback": "SHOT ON"
           },
-          "editable": { "visible": true },
+          "editable": {
+            "visible": true
+          },
           "style": {
             "font": "sans",
             "weight": 850,
-            "size": { "designPx": 18, "minPx": 14, "maxPx": 22 },
+            "size": {
+              "designPx": 18,
+              "minPx": 14
+            },
             "color": "rgba(255,255,255,0.92)",
             "align": "left",
             "vAlign": "top"
@@ -64,13 +103,23 @@
           "label": "参数",
           "type": "text",
           "zone": "bar",
-          "bind": { "kind": "settings", "joinWith": " · " },
-          "condition": { "hideWhenEmpty": true },
-          "editable": { "visible": true },
+          "bind": {
+            "kind": "settings",
+            "joinWith": " · "
+          },
+          "condition": {
+            "hideWhenEmpty": true
+          },
+          "editable": {
+            "visible": true
+          },
           "style": {
             "font": "sans",
             "weight": 650,
-            "size": { "designPx": 12, "minPx": 10, "maxPx": 16 },
+            "size": {
+              "designPx": 12,
+              "minPx": 10
+            },
             "color": "rgba(255,255,255,0.82)",
             "align": "left",
             "vAlign": "top"
@@ -80,4 +129,3 @@
     }
   ]
 }
-
