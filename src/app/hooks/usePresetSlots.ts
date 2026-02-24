@@ -36,6 +36,7 @@ type PresetSlotsV1 = {
 const STORAGE_KEY = 'presetSlots:v1';
 const SLOTS_COUNT = 10;
 const ALLOWED_TEMPLATE_IDS = WATERMARK_TEMPLATES.map((t) => t.id);
+const BUILTIN_PRESETS_URL = `${import.meta.env.BASE_URL}exif-watermark-presets.json`;
 
 const DEFAULT_PAYLOAD: PresetPayload = {
   templateId: 'bottom_bar',
@@ -184,8 +185,44 @@ function buildSlotsFile(slots: Array<PresetSlot | null>): PresetSlotsV1 {
   return { version: 1, slots: normalized };
 }
 
+function mergeSlots(current: Array<PresetSlot | null>, defaults: Array<PresetSlot | null>): Array<PresetSlot | null> {
+  return Array.from({ length: SLOTS_COUNT }, (_, i) => current[i] ?? defaults[i] ?? null);
+}
+
 export function usePresetSlots() {
   const [slots, setSlots] = useState<Array<PresetSlot | null>>(() => loadFromStorage());
+
+  useEffect(() => {
+    let cancelled = false;
+
+    let shouldBootstrap = false;
+    try {
+      shouldBootstrap = localStorage.getItem(STORAGE_KEY) == null;
+    } catch {
+      shouldBootstrap = false;
+    }
+
+    if (!shouldBootstrap) return;
+
+    (async () => {
+      try {
+        const res = await fetch(BUILTIN_PRESETS_URL);
+        if (!res.ok) return;
+        const parsed = (await res.json()) as unknown;
+        const builtinSlots = sanitizeSlotsFile(parsed);
+        const hasBuiltin = builtinSlots.some(Boolean);
+        if (!hasBuiltin) return;
+        if (cancelled) return;
+        setSlots((prev) => mergeSlots(prev, builtinSlots));
+      } catch {
+        // Ignore bootstrap errors (offline / blocked fetch).
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     try {

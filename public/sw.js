@@ -13,6 +13,7 @@ const CORE_ASSETS = [
   withBase('index.html'),
   withBase('manifest.webmanifest'),
   withBase('pwa-icon.svg'),
+  withBase('exif-watermark-presets.json'),
   withBase('pwa-192.png'),
   withBase('pwa-512.png'),
   withBase('pwa-maskable-192.png'),
