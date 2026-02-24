@@ -1,7 +1,14 @@
 import ui from '../../ui/ui.module.css';
 import { Field } from '../../ui/Field';
 import { Button } from '../../ui/Button';
-import type { ExportFormat } from '../../../core';
+import { getBuiltinTemplateJson, type ExportFormat, type JpegBackgroundMode, type TemplateId } from '../../../core';
+
+/** Returns true if the template has background area outside the photo (footer, padding, etc.) */
+function templateHasBackground(templateId: TemplateId): boolean {
+  const json = getBuiltinTemplateJson(templateId);
+  if (!json) return false;
+  return json.layout.kind === 'photo_plus_footer';
+}
 
 type Props = {
   exportFormat: ExportFormat;
@@ -12,6 +19,11 @@ type Props = {
   onMaxEdgeChange: (maxEdge: number | 'original') => void;
   jpegBackground: string;
   onJpegBackgroundChange: (color: string) => void;
+  jpegBackgroundMode: JpegBackgroundMode;
+  onJpegBackgroundModeChange: (mode: JpegBackgroundMode) => void;
+  blurRadius: number;
+  onBlurRadiusChange: (radius: number) => void;
+  templateId: TemplateId;
   hasSelection: boolean;
   imagesCount: number;
   isExporting: boolean;
@@ -29,6 +41,11 @@ export function ExportTab({
   onMaxEdgeChange,
   jpegBackground,
   onJpegBackgroundChange,
+  jpegBackgroundMode,
+  onJpegBackgroundModeChange,
+  blurRadius,
+  onBlurRadiusChange,
+  templateId,
   hasSelection,
   imagesCount,
   isExporting,
@@ -36,6 +53,8 @@ export function ExportTab({
   onExportSelected,
   onExportAll,
 }: Props) {
+  const hasBgArea = templateHasBackground(templateId);
+
   return (
     <>
       <div className={ui.section}>
@@ -87,14 +106,45 @@ export function ExportTab({
             />
           </Field>
 
-          <Field label="JPEG 背景色">
-            <input
-              className={ui.colorInput}
-              type="color"
-              value={jpegBackground}
-              onChange={(e) => onJpegBackgroundChange(e.target.value)}
-            />
+          <Field label="JPEG 背景模式">
+            <select
+              className={ui.control}
+              value={jpegBackgroundMode}
+              onChange={(e) => onJpegBackgroundModeChange(e.target.value as JpegBackgroundMode)}
+            >
+              <option value="color">纯色填充</option>
+              <option value="blur">照片边缘模糊扩展</option>
+            </select>
           </Field>
+
+          {jpegBackgroundMode === 'blur' && !hasBgArea ? (
+            <div className={ui.hint} style={{ color: 'rgba(255,200,50,0.85)' }}>
+              ⚠ 当前模板没有边框/留白区域，模糊背景效果不可见。请切换到带底栏的模板（如 Classic Footer、EZMark Card 等）。
+            </div>
+          ) : null}
+
+          {jpegBackgroundMode === 'color' ? (
+            <Field label="背景色">
+              <input
+                className={ui.colorInput}
+                type="color"
+                value={jpegBackground}
+                onChange={(e) => onJpegBackgroundChange(e.target.value)}
+              />
+            </Field>
+          ) : (
+            <Field label={`模糊强度（${blurRadius}）`} hint="数值越大模糊越明显。">
+              <input
+                className={ui.range}
+                type="range"
+                min={5}
+                max={80}
+                step={1}
+                value={blurRadius}
+                onChange={(e) => onBlurRadiusChange(Number(e.target.value))}
+              />
+            </Field>
+          )}
         </>
       ) : null}
 
@@ -112,4 +162,3 @@ export function ExportTab({
     </>
   );
 }
-

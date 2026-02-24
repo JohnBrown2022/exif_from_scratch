@@ -6,7 +6,7 @@ import InspectorPanel from './panels/InspectorPanel/InspectorPanel';
 import { useExportController } from './hooks/useExportController';
 import { useImages } from './hooks/useImages';
 import { useSelectedExif } from './hooks/useSelectedExif';
-import type { ExportFormat, TemplateId } from '../core';
+import type { ExportFormat, JpegBackgroundMode, TemplateId } from '../core';
 
 export default function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -20,6 +20,8 @@ export default function App() {
   const [jpegQuality, setJpegQuality] = useState<number>(0.92);
   const [maxEdge, setMaxEdge] = useState<number | 'original'>('original');
   const [jpegBackground, setJpegBackground] = useState<string>('#000000');
+  const [jpegBackgroundMode, setJpegBackgroundMode] = useState<JpegBackgroundMode>('color');
+  const [blurRadius, setBlurRadius] = useState<number>(30);
 
   const { exif: selectedExif, exifError: selectedExifError, isReadingExif } = useSelectedExif(selectedFile);
   const exportController = useExportController({
@@ -31,6 +33,8 @@ export default function App() {
       maxEdge,
       templateId,
       jpegBackground,
+      jpegBackgroundMode,
+      blurRadius,
     },
   });
 
@@ -93,6 +97,8 @@ export default function App() {
             exifError={selectedExifError}
             isReadingExif={isReadingExif}
             jpegBackground={jpegBackground}
+            jpegBackgroundMode={jpegBackgroundMode}
+            blurRadius={blurRadius}
             exportFormat={exportFormat}
           />
         </section>
@@ -110,6 +116,10 @@ export default function App() {
             onMaxEdgeChange={setMaxEdge}
             jpegBackground={jpegBackground}
             onJpegBackgroundChange={setJpegBackground}
+            jpegBackgroundMode={jpegBackgroundMode}
+            onJpegBackgroundModeChange={setJpegBackgroundMode}
+            blurRadius={blurRadius}
+            onBlurRadiusChange={setBlurRadius}
             hasSelection={Boolean(selectedFile)}
             imagesCount={images.length}
             isExporting={exportController.isExporting}

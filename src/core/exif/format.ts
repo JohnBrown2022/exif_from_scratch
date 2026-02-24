@@ -27,9 +27,18 @@ export function formatCameraName(exif: ExifData): string | null {
   if (!make && !model) return null;
   if (!make) return model ?? null;
   if (!model) return make;
+
   const lowerMake = make.toLowerCase();
   const lowerModel = model.toLowerCase();
+
+  // If model already contains the full make string, just use model
   if (lowerModel.includes(lowerMake)) return model;
+
+  // If model already contains the first word (brand name) of make,
+  // e.g. Make="NIKON CORPORATION", Model="NIKON Z5" → just "NIKON Z5"
+  const brandWord = lowerMake.split(/\s+/)[0];
+  if (brandWord && lowerModel.startsWith(brandWord)) return model;
+
   return `${make} ${model}`;
 }
 

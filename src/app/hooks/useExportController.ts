@@ -18,6 +18,8 @@ export type ExportControllerOptions = {
   maxEdge: number | 'original';
   templateId: TemplateId;
   jpegBackground: string;
+  jpegBackgroundMode: 'color' | 'blur';
+  blurRadius: number;
 };
 
 function createBatchJobs(targetImages: Array<{ id: string; file: File }>): BatchJob[] {

@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import panel from '../Panels.module.css';
 import ui from '../../ui/ui.module.css';
 import { Tabs, type TabItem } from '../../ui/Tabs';
-import type { BatchUpdate, ExifData, ExportFormat, TemplateId } from '../../../core';
+import type { BatchUpdate, ExifData, ExportFormat, JpegBackgroundMode, TemplateId } from '../../../core';
 
 import { BatchTab } from './BatchTab';
 import { ExportTab } from './ExportTab';
@@ -25,6 +25,10 @@ type Props = {
   onMaxEdgeChange: (maxEdge: number | 'original') => void;
   jpegBackground: string;
   onJpegBackgroundChange: (color: string) => void;
+  jpegBackgroundMode: JpegBackgroundMode;
+  onJpegBackgroundModeChange: (mode: JpegBackgroundMode) => void;
+  blurRadius: number;
+  onBlurRadiusChange: (radius: number) => void;
 
   hasSelection: boolean;
   imagesCount: number;
@@ -84,6 +88,11 @@ export default function InspectorPanel(props: Props) {
               onMaxEdgeChange={props.onMaxEdgeChange}
               jpegBackground={props.jpegBackground}
               onJpegBackgroundChange={props.onJpegBackgroundChange}
+              jpegBackgroundMode={props.jpegBackgroundMode}
+              onJpegBackgroundModeChange={props.onJpegBackgroundModeChange}
+              blurRadius={props.blurRadius}
+              onBlurRadiusChange={props.onBlurRadiusChange}
+              templateId={props.templateId}
               hasSelection={props.hasSelection}
               imagesCount={props.imagesCount}
               isExporting={props.isExporting}

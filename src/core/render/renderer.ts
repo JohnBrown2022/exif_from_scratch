@@ -14,7 +14,7 @@ type DrawImageOptions = {
 function shouldApplyRotation(rotation: CanvasRotation | null | undefined): rotation is CanvasRotation {
   return Boolean(
     rotation?.canvas &&
-      (rotation.rad !== 0 || rotation.scaleX !== 1 || rotation.scaleY !== 1 || rotation.dimensionSwapped),
+    (rotation.rad !== 0 || rotation.scaleX !== 1 || rotation.scaleY !== 1 || rotation.dimensionSwapped),
   );
 }
 
@@ -91,6 +91,8 @@ export type RenderRequest = {
   exif: ExifData;
   template: WatermarkTemplate;
   background?: string;
+  backgroundMode?: 'color' | 'blur';
+  blurRadius?: number;
   rotation?: CanvasRotation | null;
   makerLogo?: MakerLogo | null;
 };
@@ -105,6 +107,8 @@ export function renderWatermark({
   exif,
   template,
   background,
+  backgroundMode,
+  blurRadius,
   rotation,
   makerLogo,
 }: RenderRequest) {
@@ -123,7 +127,24 @@ export function renderWatermark({
   ctx.imageSmoothingQuality = 'high';
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (background) {
+
+  // Background: blur mode draws the image covering the full canvas with blur filter
+  const useBlurBg = background && backgroundMode === 'blur';
+  if (useBlurBg) {
+    const blurPx = Math.max(1, Math.round((blurRadius ?? 30) * (canvas.width / 1200)));
+    ctx.save();
+    ctx.filter = `blur(${blurPx}px)`;
+    // Draw image covering entire canvas as background
+    drawImageInRect(ctx, image, imageWidth, imageHeight, rotation, {
+      rect: { x: -blurPx, y: -blurPx, width: canvas.width + blurPx * 2, height: canvas.height + blurPx * 2 },
+      mode: 'cover',
+    });
+    ctx.filter = 'none';
+    ctx.restore();
+    // Darken the blur slightly for contrast
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else if (background) {
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }

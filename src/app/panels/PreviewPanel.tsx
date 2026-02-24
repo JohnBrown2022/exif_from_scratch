@@ -11,6 +11,7 @@ import {
   type DecodedImage,
   type ExifData,
   type ExportFormat,
+  type JpegBackgroundMode,
   type TemplateId,
 } from '../../core';
 
@@ -22,6 +23,8 @@ type Props = {
   exifError: string | null;
   isReadingExif: boolean;
   jpegBackground: string;
+  jpegBackgroundMode: JpegBackgroundMode;
+  blurRadius: number;
   exportFormat: ExportFormat;
 };
 
@@ -47,6 +50,8 @@ export default function PreviewPanel({
   exifError,
   isReadingExif,
   jpegBackground,
+  jpegBackgroundMode,
+  blurRadius,
   exportFormat,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -73,7 +78,7 @@ export default function PreviewPanel({
     setRenderError(null);
     setIsDrawing(false);
 
-    if (!canvas) return () => {};
+    if (!canvas) return () => { };
 
     const ctx = canvas.getContext('2d');
     ctx?.clearRect(0, 0, canvas.width, canvas.height);
@@ -124,7 +129,7 @@ export default function PreviewPanel({
     let cancelled = false;
 
     setMakerLogo(null);
-    if (!makerKey) return () => {};
+    if (!makerKey) return () => { };
 
     loadMakerLogo(makerKey)
       .then((logo) => {
@@ -145,9 +150,9 @@ export default function PreviewPanel({
     let cancelled = false;
 
     const canvas = canvasRef.current;
-    if (!canvas) return () => {};
-    if (!file) return () => {};
-    if (!loaded) return () => {};
+    if (!canvas) return () => { };
+    if (!file) return () => { };
+    if (!loaded) return () => { };
 
     setIsDrawing(true);
     setRenderError(null);
@@ -166,6 +171,8 @@ export default function PreviewPanel({
         exif: exif ?? {},
         template,
         background: exportFormat === 'jpeg' ? jpegBackground : undefined,
+        backgroundMode: exportFormat === 'jpeg' ? jpegBackgroundMode : undefined,
+        blurRadius: exportFormat === 'jpeg' ? blurRadius : undefined,
         rotation: loaded.rotation,
         makerLogo,
       });
@@ -178,7 +185,7 @@ export default function PreviewPanel({
     return () => {
       cancelled = true;
     };
-  }, [exif, exportFormat, file, jpegBackground, loaded, makerLogo, renderRevision, templateId]);
+  }, [blurRadius, exif, exportFormat, file, jpegBackground, jpegBackgroundMode, loaded, makerLogo, renderRevision, templateId]);
 
   return (
     <div className={ui.panelRoot}>

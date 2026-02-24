@@ -9,12 +9,16 @@ import { sanitizeFilenameSegment, stripFileExtension } from '../utils/filename';
 
 export type ExportFormat = 'png' | 'jpeg';
 
+export type JpegBackgroundMode = 'color' | 'blur';
+
 export type ExportOptions = {
   format: ExportFormat;
   jpegQuality: number;
   maxEdge: number | 'original';
   templateId: TemplateId;
   jpegBackground: string;
+  jpegBackgroundMode: JpegBackgroundMode;
+  blurRadius: number;
 };
 
 function getOutputSize(width: number, height: number, maxEdge: number | 'original') {
@@ -67,6 +71,8 @@ export async function exportWatermarkedImage(
     const mime = options.format === 'png' ? 'image/png' : 'image/jpeg';
     const quality = options.format === 'jpeg' ? options.jpegQuality : undefined;
     const background = options.format === 'jpeg' ? options.jpegBackground : undefined;
+    const backgroundMode = options.format === 'jpeg' ? options.jpegBackgroundMode : undefined;
+    const blurRadius = options.format === 'jpeg' ? options.blurRadius : undefined;
     const template = getTemplateById(options.templateId);
 
     renderWatermark({
@@ -79,6 +85,8 @@ export async function exportWatermarkedImage(
       exif: exifResult.exif,
       template,
       background,
+      backgroundMode,
+      blurRadius,
       rotation,
       makerLogo,
     });
