@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import ui from '../../ui/ui.module.css';
+import tab from './StyleTab.module.css';
 import { Accordion } from '../../ui/Accordion';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
@@ -326,26 +327,40 @@ export function StyleTab({
 
     const topologyIdHint = useMemo(() => {
         if (topologyWatermarkSettings.seedMode !== 'file_md5') return null;
-        if (!hasSelection) return '选择图片后生成 TOPOLOGY_ID';
-        if (isComputingTopologyMd5) return 'TOPOLOGY_ID 计算中…';
-        if (topologyMd5Error) return `TOPOLOGY_ID 计算失败：${topologyMd5Error}`;
-        if (topologyMd5) return `TOPOLOGY_ID: ${topologyMd5.slice(0, 8).toUpperCase()}`;
-        return 'TOPOLOGY_ID 未就绪';
+        if (!hasSelection) return '选择图片后生成样式 ID';
+        if (isComputingTopologyMd5) return '样式 ID 生成中…';
+        if (topologyMd5Error) return `样式 ID 生成失败：${topologyMd5Error}`;
+        if (topologyMd5) return `样式 ID：${topologyMd5.slice(0, 8).toUpperCase()}`;
+        return '样式 ID 未就绪';
     }, [hasSelection, isComputingTopologyMd5, topologyMd5, topologyMd5Error, topologyWatermarkSettings.seedMode]);
 
     return (
         <>
             {/* ─── 模板选择 ─── */}
-            <Field label="模板">
-                <select className={ui.control} value={templateId} onChange={(e) => onTemplateChange(e.target.value as TemplateId)}>
+            <div className={ui.section} style={{ borderTop: 'none', paddingTop: 0 }}>
+                <div className={ui.sectionTitle}>模板样式</div>
+                <div className={tab.gallery}>
                     {WATERMARK_TEMPLATES.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
+                        <button
+                            key={t.id}
+                            type="button"
+                            className={`${tab.card} ${t.id === templateId ? tab.cardActive : ''}`}
+                            onClick={() => onTemplateChange(t.id)}
+                            aria-pressed={t.id === templateId}
+                        >
+                            <div className={tab.thumb} />
+                            <div className={tab.nameRow}>
+                                <div className={tab.name}>{t.name}</div>
+                                <div className={tab.id}>{t.id}</div>
+                            </div>
+                            <div className={tab.desc}>{t.description}</div>
+                        </button>
                     ))}
-                </select>
-            </Field>
-            {currentTemplate?.description ? (
-                <div className={ui.hint}>{currentTemplate.description}</div>
-            ) : null}
+                </div>
+                {currentTemplate?.description ? (
+                    <div className={ui.hint} style={{ marginTop: 8 }}>当前：{currentTemplate.description}</div>
+                ) : null}
+            </div>
 
             {isCustomedTemplate ? (
                 <div style={{ marginTop: 4 }}>
@@ -356,16 +371,14 @@ export function StyleTab({
 
             {/* ─── EXIF 信息 ─── */}
             {hasSelection ? (
-                <div className={ui.section}>
-                    <div className={ui.sectionTitle}>EXIF 信息</div>
+                <Accordion title="EXIF 信息" defaultOpen={false}>
                     <ExifCard exif={exif} exifError={exifError} isReadingExif={isReadingExif} />
-                </div>
+                </Accordion>
             ) : null}
 
             {/* ─── 背景（仅 JPEG + 有留白的模板） ─── */}
             {showBgControls ? (
-                <div className={ui.section}>
-                    <div className={ui.sectionTitle}>背景</div>
+                <Accordion title="背景" defaultOpen={false}>
                     <Field label="模式">
                         <select className={ui.control} value={jpegBackgroundMode} onChange={(e) => onJpegBackgroundModeChange(e.target.value as JpegBackgroundMode)}>
                             <option value="color">纯色</option>
@@ -381,47 +394,21 @@ export function StyleTab({
                             <input className={ui.range} type="range" min={5} max={80} step={1} value={blurRadius} onChange={(e) => onBlurRadiusChange(Number(e.target.value))} />
                         </Field>
                     )}
-                </div>
+                </Accordion>
             ) : null}
 
-            {/* ─── 拓扑水印 ─── */}
+            {/* ─── 艺术印章（山水徽） ─── */}
             <div className={ui.section}>
-                <div className={ui.sectionTitle}>拓扑水印</div>
+                <div className={ui.sectionTitle}>艺术印章（山水徽）</div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
                     <input
                         type="checkbox"
                         checked={topologyWatermarkSettings.enabled}
                         onChange={(e) => onTopologyWatermarkSettingsChange({ enabled: e.target.checked })}
                     />
-                    <span>启用</span>
+                    <span>添加艺术印章</span>
                 </label>
-                <div className={ui.hint}>仅作用于照片区域，位于模板元素下方。</div>
-
-                <Field label="种子模式">
-                    <select
-                        className={ui.control}
-                        value={topologyWatermarkSettings.seedMode}
-                        disabled={!topologyWatermarkSettings.enabled}
-                        onChange={(e) => onTopologyWatermarkSettingsChange({ seedMode: e.target.value as TopologyWatermarkSettings['seedMode'] })}
-                    >
-                        <option value="file_md5">使用图片 MD5</option>
-                        <option value="manual">自定义</option>
-                    </select>
-                </Field>
-
-                {topologyWatermarkSettings.seedMode === 'manual' ? (
-                    <Field label="自定义 Seed" hint="任意字符串；留空则回退到图片 ID">
-                        <input
-                            className={ui.control}
-                            value={topologyWatermarkSettings.manualSeed}
-                            disabled={!topologyWatermarkSettings.enabled}
-                            onChange={(e) => onTopologyWatermarkSettingsChange({ manualSeed: e.target.value })}
-                            placeholder="例如：a3f9b2c1d4e5…"
-                        />
-                    </Field>
-                ) : topologyIdHint ? (
-                    <div className={ui.hint}>{topologyIdHint}</div>
-                ) : null}
+                <div className={ui.hint}>覆盖在照片上（不会影响边框/底栏）。</div>
 
                 <Field label="位置">
                     <select
@@ -432,7 +419,7 @@ export function StyleTab({
                             onTopologyWatermarkSettingsChange({ positionMode: e.target.value as TopologyWatermarkSettings['positionMode'] })
                         }
                     >
-                        <option value="auto">自动（避让模板）</option>
+                        <option value="auto">自动（智能避让）</option>
                         <option value="manual">手动</option>
                     </select>
                 </Field>
@@ -479,8 +466,49 @@ export function StyleTab({
                     </>
                 ) : null}
 
+                <Field label={`透明度（${topologyWatermarkSettings.alpha.toFixed(2)}）`}>
+                    <input
+                        className={ui.range}
+                        type="range"
+                        min={0.1}
+                        max={1}
+                        step={0.05}
+                        value={topologyWatermarkSettings.alpha}
+                        disabled={!topologyWatermarkSettings.enabled}
+                        onChange={(e) => onTopologyWatermarkSettingsChange({ alpha: Number(e.target.value) })}
+                    />
+                </Field>
+
+                <Accordion title="图案样式" defaultOpen={false}>
+                    <Field label="模式" hint="决定每张照片的图案是否不同">
+                        <select
+                            className={ui.control}
+                            value={topologyWatermarkSettings.seedMode}
+                            disabled={!topologyWatermarkSettings.enabled}
+                            onChange={(e) => onTopologyWatermarkSettingsChange({ seedMode: e.target.value as TopologyWatermarkSettings['seedMode'] })}
+                        >
+                            <option value="file_md5">按照片自动生成（推荐）</option>
+                            <option value="manual">固定样式（自定义）</option>
+                        </select>
+                    </Field>
+
+                    {topologyWatermarkSettings.seedMode === 'manual' ? (
+                        <Field label="固定样式 ID" hint="任意字符串；留空则跟随照片">
+                            <input
+                                className={ui.control}
+                                value={topologyWatermarkSettings.manualSeed}
+                                disabled={!topologyWatermarkSettings.enabled}
+                                onChange={(e) => onTopologyWatermarkSettingsChange({ manualSeed: e.target.value })}
+                                placeholder="例如：mountain-01"
+                            />
+                        </Field>
+                    ) : topologyIdHint ? (
+                        <div className={ui.hint}>{topologyIdHint}</div>
+                    ) : null}
+                </Accordion>
+
                 <Accordion title="高级参数" defaultOpen={false}>
-                    <Field label={`排线密度（${topologyWatermarkSettings.density}）`}>
+                    <Field label={`线条密度（${topologyWatermarkSettings.density}）`}>
                         <input
                             className={ui.range}
                             type="range"
@@ -492,7 +520,7 @@ export function StyleTab({
                             onChange={(e) => onTopologyWatermarkSettingsChange({ density: Number(e.target.value) })}
                         />
                     </Field>
-                    <Field label={`岩层扭曲（${topologyWatermarkSettings.noise.toFixed(1)}）`}>
+                    <Field label={`随机变形（${topologyWatermarkSettings.noise.toFixed(1)}）`}>
                         <input
                             className={ui.range}
                             type="range"
@@ -504,25 +532,12 @@ export function StyleTab({
                             onChange={(e) => onTopologyWatermarkSettingsChange({ noise: Number(e.target.value) })}
                         />
                     </Field>
-                    <Field label={`透明度（${topologyWatermarkSettings.alpha.toFixed(2)}）`}>
-                        <input
-                            className={ui.range}
-                            type="range"
-                            min={0.1}
-                            max={1}
-                            step={0.05}
-                            value={topologyWatermarkSettings.alpha}
-                            disabled={!topologyWatermarkSettings.enabled}
-                            onChange={(e) => onTopologyWatermarkSettingsChange({ alpha: Number(e.target.value) })}
-                        />
-                    </Field>
                 </Accordion>
             </div>
 
             {/* ─── 文案覆盖 ─── */}
             {editableLiteralTexts.length > 0 ? (
-                <div className={ui.section}>
-                    <div className={ui.sectionTitle}>文案</div>
+                <Accordion title="文案（可选）" defaultOpen={false}>
                     <div className={ui.hint}>覆盖模板中的固定文字，保存在本机浏览器。</div>
                     {editableLiteralTexts.map(({ el, depth }) => {
                         if (el.type !== 'text' || el.bind.kind !== 'literal') return null;
@@ -547,169 +562,196 @@ export function StyleTab({
                             </Field>
                         );
                     })}
-                </div>
-            ) : null}
-
-            {/* ─── 组合字段（拆分控制） ─── */}
-            {concatFieldControls.length > 0 ? (
-                <Accordion title={`组合字段（可分别控制）`} defaultOpen={false}>
-                    <div className={ui.hint}>适用于“镜头/参数/日期”等组合行；隐藏某一项时仍保持原来的对齐与样式。</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        {concatFieldControls.map(({ el, fields }) => {
-                            const hidden = new Set(elementOverrides[el.id]?.hiddenFields ?? []);
-                            return (
-                                <div key={el.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span style={{ fontSize: 12, fontWeight: 600 }}>{getElementLabel(el)}</span>
-                                        <span className={ui.muted} style={{ fontSize: 11 }}>
-                                            ({el.id})
-                                        </span>
-                                    </div>
-
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                                        {fields.map((kind) => {
-                                            const label = EXIF_FIELD_LABELS[kind] ?? kind;
-                                            const checked = !hidden.has(kind);
-                                            return (
-                                                <label key={kind} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={checked}
-                                                        onChange={(e) => {
-                                                            const nextHidden = new Set(hidden);
-                                                            if (e.target.checked) nextHidden.delete(kind);
-                                                            else nextHidden.add(kind);
-                                                            const asArray = Array.from(nextHidden);
-                                                            setElementOverride(templateId, el.id, { hiddenFields: asArray.length ? asArray : undefined });
-                                                            onTemplateOverridesChange();
-                                                        }}
-                                                    />
-                                                    <span>{label}</span>
-                                                </label>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
                 </Accordion>
             ) : null}
 
-            {/* ─── 元素开关（折叠） ─── */}
-            {toggleable.length > 0 ? (
-                <Accordion title={`元素开关（${toggleable.length}）`} defaultOpen={false}>
-                    <div className={ui.hint}>显示/隐藏水印元素。</div>
-                    {toggleable.map(({ el, depth }) => {
-                        const ov = elementOverrides[el.id] ?? {};
-                        const prefix = depth > 0 ? '↳ '.repeat(depth) : '';
-                        const label = `${prefix}${getElementLabel(el)}`;
-                        const isVisible = ov.visible !== false;
-                        const isLogo = el.type === 'maker_logo';
-                        const canEditLogoStyle = isLogo && el.editable?.logoStyle;
-                        const canEditMonoColor = isLogo && el.editable?.monoColor;
-                        const currentLogoStyle = (ov.logoStyle ?? (isLogo ? el.style.style : undefined)) ?? 'color';
-                        const currentMonoColor = ov.monoColor ?? (isLogo ? el.style.monoColor : undefined) ?? '#FFFFFF';
+            {/* ─── 高级（默认隐藏） ─── */}
+            {concatFieldControls.length > 0 || toggleable.length > 0 || (templateJson && layoutElements.length > 0) ? (
+                <Accordion title="高级" defaultOpen={false}>
+                    {concatFieldControls.length > 0 ? (
+                        <div>
+                            <div className={ui.sectionTitle}>组合字段（可分别控制）</div>
+                            <div className={ui.hint}>适用于“镜头/参数/日期”等组合行；隐藏某一项时仍保持原来的对齐与样式。</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 10 }}>
+                                {concatFieldControls.map(({ el, fields }) => {
+                                    const hidden = new Set(elementOverrides[el.id]?.hiddenFields ?? []);
+                                    return (
+                                        <div key={el.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: 12, fontWeight: 600 }}>{getElementLabel(el)}</span>
+                                                <span className={ui.muted} style={{ fontSize: 11 }}>
+                                                    ({el.id})
+                                                </span>
+                                            </div>
 
-                        return (
-                            <div key={el.id}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                                                {fields.map((kind) => {
+                                                    const label = EXIF_FIELD_LABELS[kind] ?? kind;
+                                                    const checked = !hidden.has(kind);
+                                                    return (
+                                                        <label key={kind} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={checked}
+                                                                onChange={(e) => {
+                                                                    const nextHidden = new Set(hidden);
+                                                                    if (e.target.checked) nextHidden.delete(kind);
+                                                                    else nextHidden.add(kind);
+                                                                    const asArray = Array.from(nextHidden);
+                                                                    setElementOverride(templateId, el.id, { hiddenFields: asArray.length ? asArray : undefined });
+                                                                    onTemplateOverridesChange();
+                                                                }}
+                                                            />
+                                                            <span>{label}</span>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {toggleable.length > 0 ? (
+                        <div>
+                            <div className={ui.sectionTitle}>元素开关</div>
+                            <div className={ui.hint}>显示/隐藏水印元素。</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+                                {toggleable.map(({ el, depth }) => {
+                                    const ov = elementOverrides[el.id] ?? {};
+                                    const prefix = depth > 0 ? '↳ '.repeat(depth) : '';
+                                    const label = `${prefix}${getElementLabel(el)}`;
+                                    const isVisible = ov.visible !== false;
+                                    const isLogo = el.type === 'maker_logo';
+                                    const canEditLogoStyle = isLogo && el.editable?.logoStyle;
+                                    const canEditMonoColor = isLogo && el.editable?.monoColor;
+                                    const currentLogoStyle = (ov.logoStyle ?? (isLogo ? el.style.style : undefined)) ?? 'color';
+                                    const currentMonoColor = ov.monoColor ?? (isLogo ? el.style.monoColor : undefined) ?? '#FFFFFF';
+
+                                    return (
+                                        <div key={el.id}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isVisible}
+                                                    onChange={(e) => {
+                                                        setElementOverride(templateId, el.id, { visible: e.target.checked ? undefined : false });
+                                                        onTemplateOverridesChange();
+                                                    }}
+                                                />
+                                                <span>{label}</span>
+                                            </label>
+
+                                            {isLogo && isVisible && (canEditLogoStyle || canEditMonoColor) ? (
+                                                <div style={{ display: 'flex', gap: 8, marginLeft: 28, marginTop: 4, marginBottom: 4 }}>
+                                                    {canEditLogoStyle ? (
+                                                        <Field label="风格">
+                                                            <select
+                                                                className={ui.control}
+                                                                value={currentLogoStyle}
+                                                                onChange={(e) => {
+                                                                    const next = e.target.value as 'color' | 'mono';
+                                                                    setElementOverride(templateId, el.id, { logoStyle: next });
+                                                                    onTemplateOverridesChange();
+                                                                }}
+                                                            >
+                                                                <option value="color">彩色</option>
+                                                                <option value="mono">单色</option>
+                                                            </select>
+                                                        </Field>
+                                                    ) : null}
+                                                    {canEditMonoColor && currentLogoStyle === 'mono' ? (
+                                                        <Field label="单色颜色">
+                                                            <input
+                                                                className={ui.control}
+                                                                type="color"
+                                                                value={currentMonoColor}
+                                                                onChange={(e) => {
+                                                                    setElementOverride(templateId, el.id, { monoColor: e.target.value });
+                                                                    onTemplateOverridesChange();
+                                                                }}
+                                                            />
+                                                        </Field>
+                                                    ) : null}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {templateJson && layoutElements.length > 0 ? (
+                        <div>
+                            <div className={ui.sectionTitle}>布局微调（专家）</div>
+                            <div className={ui.hint}>
+                                调整元素在栅格中的位置与对齐。
+                                {overriddenCount > 0 ? ` 已修改 ${overriddenCount} 个` : ''}
+                            </div>
+
+                            {layoutElements.length > 4 ? (
+                                <Field label="搜索" hint="按名称 / 类型过滤">
                                     <input
-                                        type="checkbox"
-                                        checked={isVisible}
-                                        onChange={(e) => {
-                                            setElementOverride(templateId, el.id, { visible: e.target.checked ? undefined : false });
+                                        className={ui.control}
+                                        value={query}
+                                        onChange={(e) => setQuery(e.target.value)}
+                                        placeholder="输入关键字…"
+                                    />
+                                </Field>
+                            ) : null}
+
+                            {overriddenCount > 0 ? (
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                                    <Button
+                                        type="button"
+                                        variant="danger"
+                                        onClick={() => {
+                                            if (!window.confirm('重置当前模板的所有自定义设置？')) return;
+                                            saveTemplateOverride(templateId, null);
                                             onTemplateOverridesChange();
                                         }}
-                                    />
-                                    <span>{label}</span>
-                                </label>
-
-                                {isLogo && isVisible && (canEditLogoStyle || canEditMonoColor) ? (
-                                    <div style={{ display: 'flex', gap: 8, marginLeft: 28, marginTop: 4, marginBottom: 4 }}>
-                                        {canEditLogoStyle ? (
-                                            <Field label="风格">
-                                                <select className={ui.control} value={currentLogoStyle}
-                                                    onChange={(e) => {
-                                                        const next = e.target.value as 'color' | 'mono';
-                                                        setElementOverride(templateId, el.id, { logoStyle: next });
-                                                        onTemplateOverridesChange();
-                                                    }}>
-                                                    <option value="color">彩色</option>
-                                                    <option value="mono">单色</option>
-                                                </select>
-                                            </Field>
-                                        ) : null}
-                                        {canEditMonoColor && currentLogoStyle === 'mono' ? (
-                                            <Field label="单色颜色">
-                                                <input className={ui.control} type="color" value={currentMonoColor}
-                                                    onChange={(e) => {
-                                                        setElementOverride(templateId, el.id, { monoColor: e.target.value });
-                                                        onTemplateOverridesChange();
-                                                    }} />
-                                            </Field>
-                                        ) : null}
-                                    </div>
-                                ) : null}
-                            </div>
-                        );
-                    })}
-                </Accordion>
-            ) : null}
-
-            {/* ─── 布局微调（折叠） ─── */}
-            {templateJson && layoutElements.length > 0 ? (
-                <Accordion title={`布局微调（${layoutElements.length}）`} defaultOpen={false}>
-                    <div className={ui.hint}>
-                        调整元素在栅格中的位置与对齐。
-                        {overriddenCount > 0 ? ` 已修改 ${overriddenCount} 个` : ''}
-                    </div>
-
-                    {layoutElements.length > 4 ? (
-                        <Field label="搜索" hint="按名称 / 类型过滤">
-                            <input className={ui.control} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="输入关键字…" />
-                        </Field>
-                    ) : null}
-
-                    {overriddenCount > 0 ? (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-                            <Button
-                                type="button"
-                                variant="danger"
-                                onClick={() => {
-                                    if (!window.confirm('重置当前模板的所有自定义设置？')) return;
-                                    saveTemplateOverride(templateId, null);
-                                    onTemplateOverridesChange();
-                                }}
-                            >
-                                全部重置
-                            </Button>
-                        </div>
-                    ) : null}
-
-                    {byZone.length === 0 ? <div className={ui.hint}>没有匹配的元素。</div> : null}
-
-                    {byZone.map(([zone, elements]) => (
-                        <div key={zone}>
-                            {byZone.length > 1 ? (
-                                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-                                    区域：{zone}
+                                    >
+                                        全部重置
+                                    </Button>
                                 </div>
                             ) : null}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                {elements.map((el) => (
-                                    <ElementCard
-                                        key={el.id}
-                                        el={el}
-                                        templateId={templateId}
-                                        elementOverrides={elementOverrides}
-                                        templateJson={templateJson}
-                                        onTemplateOverridesChange={onTemplateOverridesChange}
-                                    />
-                                ))}
-                            </div>
+
+                            {byZone.length === 0 ? <div className={ui.hint}>没有匹配的元素。</div> : null}
+
+                            {byZone.map(([zone, elements]) => (
+                                <div key={zone}>
+                                    {byZone.length > 1 ? (
+                                        <div
+                                            style={{
+                                                fontSize: 11,
+                                                color: 'rgba(255,255,255,0.35)',
+                                                marginBottom: 8,
+                                                textTransform: 'uppercase',
+                                                letterSpacing: 1,
+                                            }}
+                                        >
+                                            区域：{zone}
+                                        </div>
+                                    ) : null}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        {elements.map((el) => (
+                                            <ElementCard
+                                                key={el.id}
+                                                el={el}
+                                                templateId={templateId}
+                                                elementOverrides={elementOverrides}
+                                                templateJson={templateJson}
+                                                onTemplateOverridesChange={onTemplateOverridesChange}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    ) : null}
                 </Accordion>
             ) : null}
         </>

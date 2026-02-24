@@ -76,7 +76,7 @@ export function ExportTab({
       </Field>
 
       {exportFormat === 'jpeg' ? (
-        <Field label={`JPEG quality（${Math.round(jpegQuality * 100)}）`}>
+        <Field label={`JPEG 质量（${Math.round(jpegQuality * 100)}）`}>
           <input
             className={ui.range}
             type="range"

@@ -3,6 +3,7 @@ import styles from './App.module.css';
 import ImageListPanel from './panels/ImageListPanel';
 import PreviewPanel from './panels/PreviewPanel';
 import InspectorPanel from './panels/InspectorPanel/InspectorPanel';
+import OnboardingPanel from './panels/OnboardingPanel';
 import { useExportController } from './hooks/useExportController';
 import { useImages } from './hooks/useImages';
 import { useSelectedExif } from './hooks/useSelectedExif';
@@ -208,6 +209,8 @@ export default function App() {
     fileInputRef.current?.click();
   }
 
+  const isEmpty = images.length === 0;
+
   return (
     <div className={styles.root}>
       <header className={styles.header}>
@@ -248,73 +251,83 @@ export default function App() {
         </div>
       </header>
 
-      <main className={styles.main}>
-        <section className={styles.panel}>
-          <ImageListPanel
-            images={images}
-            selectedIndex={selectedIndex}
-            onSelect={setSelectedIndex}
-            onImport={openFilePicker}
-            onRemoveSelected={removeSelected}
-            onClearAll={clearAll}
-            onFilesDropped={(dropped) => addFiles(dropped)}
-          />
-        </section>
+      <main className={`${styles.main} ${isEmpty ? styles.mainEmpty : ''}`}>
+        {isEmpty ? (
+          <section className={`${styles.panel} ${styles.panelEmpty}`}>
+            <OnboardingPanel onPickFiles={openFilePicker} onFilesDropped={(files) => addFiles(files)} />
+          </section>
+        ) : (
+          <>
+            <section className={styles.panel}>
+              <ImageListPanel
+                images={images}
+                selectedIndex={selectedIndex}
+                onSelect={setSelectedIndex}
+                onImport={openFilePicker}
+                onRemoveSelected={removeSelected}
+                onClearAll={clearAll}
+                onFilesDropped={(dropped) => addFiles(dropped)}
+              />
+            </section>
 
-        <section className={styles.panel}>
-          <PreviewPanel
-            file={selectedFile}
-            templateId={templateId}
-            renderRevision={templateRenderRevision}
-            exif={selectedExif}
-            exifError={selectedExifError}
-            isReadingExif={isReadingExif}
-            jpegBackground={jpegBackground}
-            jpegBackgroundMode={jpegBackgroundMode}
-            blurRadius={blurRadius}
-            exportFormat={exportFormat}
-            topologyWatermark={topologyWatermarkRender}
-          />
-        </section>
+            <section className={styles.panel}>
+              <PreviewPanel
+                file={selectedFile}
+                templateId={templateId}
+                renderRevision={templateRenderRevision}
+                exif={selectedExif}
+                exifError={selectedExifError}
+                isReadingExif={isReadingExif}
+                jpegBackground={jpegBackground}
+                jpegBackgroundMode={jpegBackgroundMode}
+                blurRadius={blurRadius}
+                exportFormat={exportFormat}
+                topologyWatermark={topologyWatermarkRender}
+                isExporting={exportController.isExporting}
+                onQuickExport={exportController.exportSelected}
+              />
+            </section>
 
-        <section className={styles.panel}>
-          <InspectorPanel
-            templateId={templateId}
-            onTemplateChange={setTemplateId}
-            onTemplateOverridesChange={() => setTemplateRenderRevision((prev) => prev + 1)}
-            exportFormat={exportFormat}
-            onExportFormatChange={setExportFormat}
-            jpegQuality={jpegQuality}
-            onJpegQualityChange={setJpegQuality}
-            maxEdge={maxEdge}
-            onMaxEdgeChange={setMaxEdge}
-            jpegBackground={jpegBackground}
-            onJpegBackgroundChange={setJpegBackground}
-            jpegBackgroundMode={jpegBackgroundMode}
-            onJpegBackgroundModeChange={setJpegBackgroundMode}
-            blurRadius={blurRadius}
-            onBlurRadiusChange={setBlurRadius}
-            topologyWatermarkSettings={topologyWatermarkSettings}
-            onTopologyWatermarkSettingsChange={updateTopologyWatermarkSettings}
-            topologyMd5={topologyMd5}
-            topologyMd5Error={topologyMd5Error}
-            isComputingTopologyMd5={isComputingTopologyMd5}
-            presetPayload={presetPayload}
-            onApplyPresetPayload={applyPresetPayload}
-            hasSelection={Boolean(selectedFile)}
-            imagesCount={images.length}
-            isExporting={exportController.isExporting}
-            exportStatus={exportController.exportStatus}
-            onExportSelected={exportController.exportSelected}
-            onExportAll={exportController.exportAll}
-            batchState={exportController.batchState}
-            onCancelBatch={exportController.cancelBatch}
-            onRetryFailed={exportController.retryFailed}
-            exif={selectedExif}
-            exifError={selectedExifError}
-            isReadingExif={isReadingExif}
-          />
-        </section>
+            <section className={styles.panel}>
+              <InspectorPanel
+                templateId={templateId}
+                onTemplateChange={setTemplateId}
+                onTemplateOverridesChange={() => setTemplateRenderRevision((prev) => prev + 1)}
+                exportFormat={exportFormat}
+                onExportFormatChange={setExportFormat}
+                jpegQuality={jpegQuality}
+                onJpegQualityChange={setJpegQuality}
+                maxEdge={maxEdge}
+                onMaxEdgeChange={setMaxEdge}
+                jpegBackground={jpegBackground}
+                onJpegBackgroundChange={setJpegBackground}
+                jpegBackgroundMode={jpegBackgroundMode}
+                onJpegBackgroundModeChange={setJpegBackgroundMode}
+                blurRadius={blurRadius}
+                onBlurRadiusChange={setBlurRadius}
+                topologyWatermarkSettings={topologyWatermarkSettings}
+                onTopologyWatermarkSettingsChange={updateTopologyWatermarkSettings}
+                topologyMd5={topologyMd5}
+                topologyMd5Error={topologyMd5Error}
+                isComputingTopologyMd5={isComputingTopologyMd5}
+                presetPayload={presetPayload}
+                onApplyPresetPayload={applyPresetPayload}
+                hasSelection={Boolean(selectedFile)}
+                imagesCount={images.length}
+                isExporting={exportController.isExporting}
+                exportStatus={exportController.exportStatus}
+                onExportSelected={exportController.exportSelected}
+                onExportAll={exportController.exportAll}
+                batchState={exportController.batchState}
+                onCancelBatch={exportController.cancelBatch}
+                onRetryFailed={exportController.retryFailed}
+                exif={selectedExif}
+                exifError={selectedExifError}
+                isReadingExif={isReadingExif}
+              />
+            </section>
+          </>
+        )}
       </main>
     </div>
   );

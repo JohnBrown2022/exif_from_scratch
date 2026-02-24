@@ -87,10 +87,20 @@
   border-top: 1px solid var(--border);
 }
 
+.mainEmpty {
+  grid-template-columns: 1fr;
+  padding: 18px;
+}
+
 .panel {
   overflow: hidden;
   min-height: 0;
   border-right: 1px solid var(--border);
+}
+
+.panelEmpty {
+  border-right: none;
+  border-radius: 14px;
 }
 
 .panel:last-child {

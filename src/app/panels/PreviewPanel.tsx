@@ -28,6 +28,8 @@ type Props = {
   blurRadius: number;
   exportFormat: ExportFormat;
   topologyWatermark: TopologyWatermarkRenderOptions | null;
+  isExporting: boolean;
+  onQuickExport: () => void;
 };
 
 function getPreviewSize(width: number, height: number, maxEdge: number) {
@@ -61,6 +63,8 @@ export default function PreviewPanel({
   blurRadius,
   exportFormat,
   topologyWatermark,
+  isExporting,
+  onQuickExport,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -220,6 +224,17 @@ export default function PreviewPanel({
         <div>
           <div className={ui.panelTitle}>预览</div>
           <div className={ui.panelSubtitle}>{subtitle}</div>
+        </div>
+        <div>
+          <button
+            type="button"
+            className={ui.ghostButton}
+            disabled={!file || isExporting || isRendering}
+            onClick={onQuickExport}
+            title="快速导出当前图片"
+          >
+            ⬇ 导出当前
+          </button>
         </div>
       </div>
 
