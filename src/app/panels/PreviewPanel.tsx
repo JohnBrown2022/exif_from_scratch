@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ui from './Panels.module.css';
+import { useAppSettings } from '../state/appSettings';
 import {
   decodeImage,
   getTemplateById,
@@ -10,23 +11,14 @@ import {
   type CanvasRotation,
   type DecodedImage,
   type ExifData,
-  type ExportFormat,
-  type JpegBackgroundMode,
-  type TemplateId,
   type TopologyWatermarkRenderOptions,
 } from '../../core';
 
 type Props = {
   file: File | null;
-  templateId: TemplateId;
-  renderRevision: number;
   exif: ExifData | null;
   exifError: string | null;
   isReadingExif: boolean;
-  jpegBackground: string;
-  jpegBackgroundMode: JpegBackgroundMode;
-  blurRadius: number;
-  exportFormat: ExportFormat;
   topologyWatermark: TopologyWatermarkRenderOptions | null;
   isExporting: boolean;
   onQuickExport: () => void;
@@ -53,19 +45,14 @@ type LoadedImage = {
 
 export default function PreviewPanel({
   file,
-  templateId,
-  renderRevision,
   exif,
   exifError,
   isReadingExif,
-  jpegBackground,
-  jpegBackgroundMode,
-  blurRadius,
-  exportFormat,
   topologyWatermark,
   isExporting,
   onQuickExport,
 }: Props) {
+  const { state: settings } = useAppSettings();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isDecoding, setIsDecoding] = useState(false);
@@ -176,7 +163,7 @@ export default function PreviewPanel({
 
     try {
       const previewSize = getPreviewSize(loaded.orientedWidth, loaded.orientedHeight, 1200);
-      const template = getTemplateById(templateId);
+      const template = getTemplateById(settings.templateId);
 
       renderWatermark({
         canvas,
@@ -187,9 +174,9 @@ export default function PreviewPanel({
         outputHeight: previewSize.height,
         exif: exif ?? {},
         template,
-        background: exportFormat === 'jpeg' ? jpegBackground : undefined,
-        backgroundMode: exportFormat === 'jpeg' ? jpegBackgroundMode : undefined,
-        blurRadius: exportFormat === 'jpeg' ? blurRadius : undefined,
+        background: settings.exportFormat === 'jpeg' ? settings.jpegBackground : undefined,
+        backgroundMode: settings.exportFormat === 'jpeg' ? settings.jpegBackgroundMode : undefined,
+        blurRadius: settings.exportFormat === 'jpeg' ? settings.blurRadius : undefined,
         rotation: loaded.rotation,
         makerLogo,
         topologyWatermark,
@@ -205,16 +192,16 @@ export default function PreviewPanel({
     };
   }, [
     activeFileKey,
-    blurRadius,
     exif,
-    exportFormat,
     file,
-    jpegBackground,
-    jpegBackgroundMode,
     loaded,
     makerLogo,
-    renderRevision,
-    templateId,
+    settings.blurRadius,
+    settings.exportFormat,
+    settings.jpegBackground,
+    settings.jpegBackgroundMode,
+    settings.templateId,
+    settings.templateRenderRevision,
     topologyWatermark,
   ]);
 

@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react';
 
 import panel from '../Panels.module.css';
 import { Tabs, type TabItem } from '../../ui/Tabs';
-import type { BatchUpdate, ExifData, ExportFormat, JpegBackgroundMode, TemplateId, TopologyWatermarkSettings } from '../../../core';
-import type { PresetPayload } from '../../hooks/usePresetSlots';
+import type { BatchUpdate, ExifData } from '../../../core';
 
 import { ExportTab } from './ExportTab';
 import { StyleTab } from './StyleTab';
@@ -11,31 +10,9 @@ import { StyleTab } from './StyleTab';
 type TabId = 'style' | 'export';
 
 type Props = {
-  templateId: TemplateId;
-  onTemplateChange: (id: TemplateId) => void;
-  onTemplateOverridesChange: () => void;
-
-  exportFormat: ExportFormat;
-  onExportFormatChange: (format: ExportFormat) => void;
-  jpegQuality: number;
-  onJpegQualityChange: (quality: number) => void;
-  maxEdge: number | 'original';
-  onMaxEdgeChange: (maxEdge: number | 'original') => void;
-  jpegBackground: string;
-  onJpegBackgroundChange: (color: string) => void;
-  jpegBackgroundMode: JpegBackgroundMode;
-  onJpegBackgroundModeChange: (mode: JpegBackgroundMode) => void;
-  blurRadius: number;
-  onBlurRadiusChange: (radius: number) => void;
-
-  topologyWatermarkSettings: TopologyWatermarkSettings;
-  onTopologyWatermarkSettingsChange: (patch: Partial<TopologyWatermarkSettings>) => void;
   topologyMd5: string | null;
   topologyMd5Error: string | null;
   isComputingTopologyMd5: boolean;
-
-  presetPayload: PresetPayload;
-  onApplyPresetPayload: (payload: PresetPayload) => void;
 
   hasSelection: boolean;
   imagesCount: number;
@@ -85,22 +62,10 @@ export default function InspectorPanel(props: Props) {
         {tab === 'style' ? (
           <div role="tabpanel" id="panel-inspector-style" aria-labelledby="tab-inspector-style">
             <StyleTab
-              templateId={props.templateId}
-              onTemplateChange={props.onTemplateChange}
-              onTemplateOverridesChange={props.onTemplateOverridesChange}
               hasSelection={props.hasSelection}
               exif={props.exif}
               exifError={props.exifError}
               isReadingExif={props.isReadingExif}
-              exportFormat={props.exportFormat}
-              jpegBackground={props.jpegBackground}
-              onJpegBackgroundChange={props.onJpegBackgroundChange}
-              jpegBackgroundMode={props.jpegBackgroundMode}
-              onJpegBackgroundModeChange={props.onJpegBackgroundModeChange}
-              blurRadius={props.blurRadius}
-              onBlurRadiusChange={props.onBlurRadiusChange}
-              topologyWatermarkSettings={props.topologyWatermarkSettings}
-              onTopologyWatermarkSettingsChange={props.onTopologyWatermarkSettingsChange}
               topologyMd5={props.topologyMd5}
               topologyMd5Error={props.topologyMd5Error}
               isComputingTopologyMd5={props.isComputingTopologyMd5}
@@ -111,12 +76,6 @@ export default function InspectorPanel(props: Props) {
         {tab === 'export' ? (
           <div role="tabpanel" id="panel-inspector-export" aria-labelledby="tab-inspector-export">
             <ExportTab
-              exportFormat={props.exportFormat}
-              onExportFormatChange={props.onExportFormatChange}
-              jpegQuality={props.jpegQuality}
-              onJpegQualityChange={props.onJpegQualityChange}
-              maxEdge={props.maxEdge}
-              onMaxEdgeChange={props.onMaxEdgeChange}
               hasSelection={props.hasSelection}
               imagesCount={props.imagesCount}
               isExporting={props.isExporting}
@@ -126,8 +85,6 @@ export default function InspectorPanel(props: Props) {
               batchState={props.batchState}
               onCancelBatch={props.onCancelBatch}
               onRetryFailed={props.onRetryFailed}
-              presetPayload={props.presetPayload}
-              onApplyPresetPayload={props.onApplyPresetPayload}
             />
           </div>
         ) : null}

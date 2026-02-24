@@ -6,6 +6,7 @@ import { Accordion } from '../../ui/Accordion';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { Field } from '../../ui/Field';
+import { useAppSettings } from '../../state/appSettings';
 import {
     buildWatermarkFields,
     clearElementOverride,
@@ -16,7 +17,6 @@ import {
     WATERMARK_TEMPLATES,
     type ElementSpec,
     type ExifData,
-    type ExportFormat,
     type ExifFieldKind,
     type GridOverride,
     type JpegBackgroundMode,
@@ -82,23 +82,10 @@ function uniqueStable<T>(items: T[]): T[] {
 // ─── Types ─────────────────────────────────────────────────
 
 type Props = {
-    templateId: TemplateId;
-    onTemplateChange: (id: TemplateId) => void;
-    onTemplateOverridesChange: () => void;
     hasSelection: boolean;
     exif: ExifData | null;
     exifError: string | null;
     isReadingExif: boolean;
-    exportFormat: ExportFormat;
-    jpegBackground: string;
-    onJpegBackgroundChange: (color: string) => void;
-    jpegBackgroundMode: JpegBackgroundMode;
-    onJpegBackgroundModeChange: (mode: JpegBackgroundMode) => void;
-    blurRadius: number;
-    onBlurRadiusChange: (radius: number) => void;
-
-    topologyWatermarkSettings: TopologyWatermarkSettings;
-    onTopologyWatermarkSettingsChange: (patch: Partial<TopologyWatermarkSettings>) => void;
     topologyMd5: string | null;
     topologyMd5Error: string | null;
     isComputingTopologyMd5: boolean;
@@ -248,26 +235,28 @@ function ElementCard({
 // ─── Main ──────────────────────────────────────────────────
 
 export function StyleTab({
-    templateId,
-    onTemplateChange,
-    onTemplateOverridesChange,
     hasSelection,
     exif,
     exifError,
     isReadingExif,
-    exportFormat,
-    jpegBackground,
-    onJpegBackgroundChange,
-    jpegBackgroundMode,
-    onJpegBackgroundModeChange,
-    blurRadius,
-    onBlurRadiusChange,
-    topologyWatermarkSettings,
-    onTopologyWatermarkSettingsChange,
     topologyMd5,
     topologyMd5Error,
     isComputingTopologyMd5,
 }: Props) {
+    const { state: settings, actions: settingsActions } = useAppSettings();
+    const templateId = settings.templateId;
+    const exportFormat = settings.exportFormat;
+    const jpegBackground = settings.jpegBackground;
+    const jpegBackgroundMode = settings.jpegBackgroundMode;
+    const blurRadius = settings.blurRadius;
+    const topologyWatermarkSettings = settings.topologyWatermark;
+    const onTemplateChange = settingsActions.setTemplateId;
+    const onTemplateOverridesChange = settingsActions.bumpTemplateRenderRevision;
+    const onJpegBackgroundChange = settingsActions.setJpegBackground;
+    const onJpegBackgroundModeChange = settingsActions.setJpegBackgroundMode;
+    const onBlurRadiusChange = settingsActions.setBlurRadius;
+    const onTopologyWatermarkSettingsChange = settingsActions.patchTopologyWatermark;
+
     const templateJson = getBuiltinTemplateJson(templateId);
     const isCustomedTemplate = templateId === 'customed';
     const override = loadTemplateOverride(templateId);

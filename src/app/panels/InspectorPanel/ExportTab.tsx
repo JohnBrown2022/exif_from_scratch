@@ -1,17 +1,11 @@
 import ui from '../../ui/ui.module.css';
 import { Field } from '../../ui/Field';
 import { Button } from '../../ui/Button';
-import type { BatchUpdate, ExportFormat } from '../../../core';
-import type { PresetPayload } from '../../hooks/usePresetSlots';
+import type { BatchUpdate } from '../../../core';
+import { useAppSettings } from '../../state/appSettings';
 import { PresetSlots } from './PresetSlots';
 
 type Props = {
-  exportFormat: ExportFormat;
-  onExportFormatChange: (format: ExportFormat) => void;
-  jpegQuality: number;
-  onJpegQualityChange: (quality: number) => void;
-  maxEdge: number | 'original';
-  onMaxEdgeChange: (maxEdge: number | 'original') => void;
   hasSelection: boolean;
   imagesCount: number;
   isExporting: boolean;
@@ -21,17 +15,9 @@ type Props = {
   batchState: BatchUpdate | null;
   onCancelBatch: () => void;
   onRetryFailed: () => void;
-  presetPayload: PresetPayload;
-  onApplyPresetPayload: (payload: PresetPayload) => void;
 };
 
 export function ExportTab({
-  exportFormat,
-  onExportFormatChange,
-  jpegQuality,
-  onJpegQualityChange,
-  maxEdge,
-  onMaxEdgeChange,
   hasSelection,
   imagesCount,
   isExporting,
@@ -41,9 +27,10 @@ export function ExportTab({
   batchState,
   onCancelBatch,
   onRetryFailed,
-  presetPayload,
-  onApplyPresetPayload,
 }: Props) {
+  const { state: settings, actions: settingsActions, presetPayload } = useAppSettings();
+  const { exportFormat, jpegQuality, maxEdge } = settings;
+
   const failedCount = batchState ? batchState.jobs.filter((job) => job.status === 'error').length : 0;
   const total = batchState?.total ?? 0;
   const completed = batchState?.completed ?? 0;
@@ -53,7 +40,7 @@ export function ExportTab({
     <>
       {/* ─── 输出设置 ─── */}
       <Field label="格式">
-        <select className={ui.control} value={exportFormat} onChange={(e) => onExportFormatChange(e.target.value as ExportFormat)}>
+        <select className={ui.control} value={exportFormat} onChange={(e) => settingsActions.setExportFormat(e.target.value as typeof exportFormat)}>
           <option value="jpeg">JPEG</option>
           <option value="png">PNG</option>
         </select>
@@ -65,8 +52,8 @@ export function ExportTab({
           value={String(maxEdge)}
           onChange={(e) => {
             const raw = e.target.value;
-            if (raw === 'original') onMaxEdgeChange('original');
-            else onMaxEdgeChange(Number(raw));
+            if (raw === 'original') settingsActions.setMaxEdge('original');
+            else settingsActions.setMaxEdge(Number(raw));
           }}
         >
           <option value="original">原尺寸</option>
@@ -84,7 +71,7 @@ export function ExportTab({
             max={95}
             step={1}
             value={Math.round(jpegQuality * 100)}
-            onChange={(e) => onJpegQualityChange(Number(e.target.value) / 100)}
+            onChange={(e) => settingsActions.setJpegQuality(Number(e.target.value) / 100)}
           />
         </Field>
       ) : null}
@@ -147,7 +134,7 @@ export function ExportTab({
       ) : null}
 
       {/* ─── 预设槽位 ─── */}
-      <PresetSlots currentPayload={presetPayload} onApplyPayload={onApplyPresetPayload} />
+      <PresetSlots currentPayload={presetPayload} onApplyPayload={settingsActions.applyPresetPayload} />
     </>
   );
 }

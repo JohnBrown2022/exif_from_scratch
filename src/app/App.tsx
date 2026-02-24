@@ -7,12 +7,18 @@ import OnboardingPanel from './panels/OnboardingPanel';
 import { useExportController } from './hooks/useExportController';
 import { useImages } from './hooks/useImages';
 import { useSelectedExif } from './hooks/useSelectedExif';
-import type { PresetPayload } from './hooks/usePresetSlots';
-import { fingerprintMd5Hex, type ExportFormat, type JpegBackgroundMode, type TemplateId, type TopologyWatermarkRenderOptions, type TopologyWatermarkSettings } from '../core';
-import { loadTemplateOverride, saveTemplateOverride } from '../core/render/engine/overrides';
-import { useTopologyWatermarkSettings } from './hooks/useTopologyWatermarkSettings';
+import { fingerprintMd5Hex, type TopologyWatermarkRenderOptions } from '../core';
+import { AppSettingsProvider, useAppSettings } from './state/appSettings';
 
 export default function App() {
+  return (
+    <AppSettingsProvider>
+      <AppInner />
+    </AppSettingsProvider>
+  );
+}
+
+function AppInner() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { images, selectedIndex, setSelectedIndex, selected, addFiles, removeSelected, clearAll } = useImages();
@@ -22,14 +28,7 @@ export default function App() {
     [selectedFile],
   );
 
-  const [templateId, setTemplateId] = useState<TemplateId>('bottom_bar');
-  const [templateRenderRevision, setTemplateRenderRevision] = useState(0);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('jpeg');
-  const [jpegQuality, setJpegQuality] = useState<number>(0.92);
-  const [maxEdge, setMaxEdge] = useState<number | 'original'>('original');
-  const [jpegBackground, setJpegBackground] = useState<string>('#000000');
-  const [jpegBackgroundMode, setJpegBackgroundMode] = useState<JpegBackgroundMode>('color');
-  const [blurRadius, setBlurRadius] = useState<number>(30);
+  const { state: settings } = useAppSettings();
 
   const [swUpdateReady, setSwUpdateReady] = useState(false);
   const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
@@ -76,11 +75,6 @@ export default function App() {
     };
   }, []);
 
-  const { settings: topologyWatermarkSettings, setSettings: setTopologyWatermarkSettings } = useTopologyWatermarkSettings();
-  const updateTopologyWatermarkSettings = (patch: Partial<TopologyWatermarkSettings>) => {
-    setTopologyWatermarkSettings((prev) => ({ ...prev, ...patch }));
-  };
-
   const [topologyMd5, setTopologyMd5] = useState<string | null>(null);
   const [topologyMd5Error, setTopologyMd5Error] = useState<string | null>(null);
   const [isComputingTopologyMd5, setIsComputingTopologyMd5] = useState(false);
@@ -93,7 +87,7 @@ export default function App() {
     setIsComputingTopologyMd5(false);
 
     if (!selectedFile) return () => { };
-    if (topologyWatermarkSettings.seedMode !== 'file_md5') return () => { };
+    if (settings.topologyWatermark.seedMode !== 'file_md5') return () => { };
 
     setIsComputingTopologyMd5(true);
 
@@ -116,86 +110,44 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [selectedFile, selectedFileKey, topologyWatermarkSettings.seedMode]);
+  }, [selectedFile, selectedFileKey, settings.topologyWatermark.seedMode]);
 
   const topologyWatermarkRender = useMemo<TopologyWatermarkRenderOptions | null>(() => {
-    if (!topologyWatermarkSettings.enabled) return null;
+    if (!settings.topologyWatermark.enabled) return null;
 
-    const manualSeed = topologyWatermarkSettings.manualSeed.trim();
+    const manualSeed = settings.topologyWatermark.manualSeed.trim();
     const seed =
-      topologyWatermarkSettings.seedMode === 'manual'
+      settings.topologyWatermark.seedMode === 'manual'
         ? manualSeed || topologyMd5 || selectedFileKey || 'default'
         : topologyMd5 || selectedFileKey || 'default';
 
     return {
       enabled: true,
       seed,
-      positionMode: topologyWatermarkSettings.positionMode,
-      x: topologyWatermarkSettings.x,
-      y: topologyWatermarkSettings.y,
-      size: topologyWatermarkSettings.size,
-      density: topologyWatermarkSettings.density,
-      noise: topologyWatermarkSettings.noise,
-      alpha: topologyWatermarkSettings.alpha,
+      positionMode: settings.topologyWatermark.positionMode,
+      x: settings.topologyWatermark.x,
+      y: settings.topologyWatermark.y,
+      size: settings.topologyWatermark.size,
+      density: settings.topologyWatermark.density,
+      noise: settings.topologyWatermark.noise,
+      alpha: settings.topologyWatermark.alpha,
     };
-  }, [selectedFileKey, topologyMd5, topologyWatermarkSettings]);
+  }, [selectedFileKey, settings.topologyWatermark, topologyMd5]);
 
   const { exif: selectedExif, exifError: selectedExifError, isReadingExif } = useSelectedExif(selectedFile);
-
-  const presetPayload = useMemo<PresetPayload>(
-    () => {
-      void templateRenderRevision;
-      return {
-        templateId,
-        exportFormat,
-        jpegQuality,
-        maxEdge,
-        jpegBackground,
-        jpegBackgroundMode,
-        blurRadius,
-        topologyWatermark: topologyWatermarkSettings,
-        templateOverrides: loadTemplateOverride(templateId),
-      };
-    },
-    [
-      blurRadius,
-      exportFormat,
-      jpegBackground,
-      jpegBackgroundMode,
-      jpegQuality,
-      maxEdge,
-      templateId,
-      topologyWatermarkSettings,
-      templateRenderRevision, // re-read overrides when they change
-    ],
-  );
-
-  const applyPresetPayload = (payload: PresetPayload) => {
-    setTemplateId(payload.templateId);
-    setExportFormat(payload.exportFormat);
-    setJpegQuality(payload.jpegQuality);
-    setMaxEdge(payload.maxEdge);
-    setJpegBackground(payload.jpegBackground);
-    setJpegBackgroundMode(payload.jpegBackgroundMode);
-    setBlurRadius(payload.blurRadius);
-    setTopologyWatermarkSettings(payload.topologyWatermark);
-    // Restore template overrides
-    saveTemplateOverride(payload.templateId, payload.templateOverrides ?? null);
-    setTemplateRenderRevision((prev) => prev + 1);
-  };
 
   const exportController = useExportController({
     images,
     selectedFile,
     options: {
-      format: exportFormat,
-      jpegQuality,
-      maxEdge,
-      templateId,
-      jpegBackground,
-      jpegBackgroundMode,
-      blurRadius,
-      topologyWatermark: topologyWatermarkSettings,
+      format: settings.exportFormat,
+      jpegQuality: settings.jpegQuality,
+      maxEdge: settings.maxEdge,
+      templateId: settings.templateId,
+      jpegBackground: settings.jpegBackground,
+      jpegBackgroundMode: settings.jpegBackgroundMode,
+      blurRadius: settings.blurRadius,
+      topologyWatermark: settings.topologyWatermark,
     },
   });
 
@@ -273,15 +225,9 @@ export default function App() {
             <section className={styles.panel}>
               <PreviewPanel
                 file={selectedFile}
-                templateId={templateId}
-                renderRevision={templateRenderRevision}
                 exif={selectedExif}
                 exifError={selectedExifError}
                 isReadingExif={isReadingExif}
-                jpegBackground={jpegBackground}
-                jpegBackgroundMode={jpegBackgroundMode}
-                blurRadius={blurRadius}
-                exportFormat={exportFormat}
                 topologyWatermark={topologyWatermarkRender}
                 isExporting={exportController.isExporting}
                 onQuickExport={exportController.exportSelected}
@@ -290,28 +236,9 @@ export default function App() {
 
             <section className={styles.panel}>
               <InspectorPanel
-                templateId={templateId}
-                onTemplateChange={setTemplateId}
-                onTemplateOverridesChange={() => setTemplateRenderRevision((prev) => prev + 1)}
-                exportFormat={exportFormat}
-                onExportFormatChange={setExportFormat}
-                jpegQuality={jpegQuality}
-                onJpegQualityChange={setJpegQuality}
-                maxEdge={maxEdge}
-                onMaxEdgeChange={setMaxEdge}
-                jpegBackground={jpegBackground}
-                onJpegBackgroundChange={setJpegBackground}
-                jpegBackgroundMode={jpegBackgroundMode}
-                onJpegBackgroundModeChange={setJpegBackgroundMode}
-                blurRadius={blurRadius}
-                onBlurRadiusChange={setBlurRadius}
-                topologyWatermarkSettings={topologyWatermarkSettings}
-                onTopologyWatermarkSettingsChange={updateTopologyWatermarkSettings}
                 topologyMd5={topologyMd5}
                 topologyMd5Error={topologyMd5Error}
                 isComputingTopologyMd5={isComputingTopologyMd5}
-                presetPayload={presetPayload}
-                onApplyPresetPayload={applyPresetPayload}
                 hasSelection={Boolean(selectedFile)}
                 imagesCount={images.length}
                 isExporting={exportController.isExporting}
