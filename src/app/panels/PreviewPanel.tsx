@@ -7,6 +7,8 @@ import {
   loadMakerLogo,
   readRotation,
   renderWatermark,
+  type CanvasRotation,
+  type DecodedImage,
   type ExifData,
   type ExportFormat,
   type TemplateId,
@@ -30,6 +32,13 @@ function getPreviewSize(width: number, height: number, maxEdge: number) {
   return { width: Math.round(width * scale), height: Math.round(height * scale) };
 }
 
+type LoadedImage = {
+  decoded: DecodedImage;
+  rotation: CanvasRotation | null;
+  orientedWidth: number;
+  orientedHeight: number;
+};
+
 export default function PreviewPanel({
   file,
   templateId,
@@ -42,7 +51,11 @@ export default function PreviewPanel({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
-  const [isRendering, setIsRendering] = useState(false);
+  const [isDecoding, setIsDecoding] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const isRendering = isDecoding || isDrawing;
+  const [loaded, setLoaded] = useState<LoadedImage | null>(null);
+  const [makerLogo, setMakerLogo] = useState<Awaited<ReturnType<typeof loadMakerLogo>>>(null);
 
   const subtitle = useMemo(() => {
     if (!file) return '选择一张图片开始';
@@ -53,27 +66,29 @@ export default function PreviewPanel({
 
   useEffect(() => {
     let cancelled = false;
+    let decoded: DecodedImage | null = null;
+
+    const canvas = canvasRef.current;
+    setLoaded(null);
+    setRenderError(null);
+    setIsDrawing(false);
+
+    if (!canvas) return () => {};
+
+    const ctx = canvas.getContext('2d');
+    ctx?.clearRect(0, 0, canvas.width, canvas.height);
 
     async function run() {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      setRenderError(null);
-
       if (!file) {
-        const ctx = canvas.getContext('2d');
-        ctx?.clearRect(0, 0, canvas.width, canvas.height);
+        setIsDecoding(false);
         return;
       }
 
-      setIsRendering(true);
-      const [decoded, rotation] = await Promise.all([decodeImage(file), readRotation(file)]);
+      setIsDecoding(true);
+      const [nextDecoded, rotation] = await Promise.all([decodeImage(file), readRotation(file)]);
+      decoded = nextDecoded;
 
       try {
-        if (cancelled) return;
-
-        const makerKey = exif ? inferMakerLogoKey(exif) : null;
-        const makerLogo = makerKey ? await loadMakerLogo(makerKey) : null;
         if (cancelled) return;
 
         const orientedWidth =
@@ -81,38 +96,89 @@ export default function PreviewPanel({
         const orientedHeight =
           rotation?.canvas && rotation.dimensionSwapped ? decoded.width : decoded.height;
 
-        const previewSize = getPreviewSize(orientedWidth, orientedHeight, 1200);
-        const template = getTemplateById(templateId);
-
-        renderWatermark({
-          canvas,
-          image: decoded.source,
-          imageWidth: decoded.width,
-          imageHeight: decoded.height,
-          outputWidth: previewSize.width,
-          outputHeight: previewSize.height,
-          exif: exif ?? {},
-          template,
-          background: exportFormat === 'jpeg' ? jpegBackground : undefined,
-          rotation,
-          makerLogo,
-        });
-      } finally {
+        setLoaded({ decoded, rotation, orientedWidth, orientedHeight });
+      } catch (err) {
         decoded.close();
-        if (!cancelled) setIsRendering(false);
+        decoded = null;
+        throw err;
+      } finally {
+        if (!cancelled) setIsDecoding(false);
       }
     }
 
     run().catch((err) => {
       if (cancelled) return;
-      setIsRendering(false);
-      setRenderError(err instanceof Error ? err.message : '预览渲染失败');
+      setIsDecoding(false);
+      setRenderError(err instanceof Error ? err.message : '预览解码失败');
     });
 
     return () => {
       cancelled = true;
+      decoded?.close();
     };
-  }, [exif, exportFormat, file, jpegBackground, renderRevision, templateId]);
+  }, [file]);
+
+  const makerKey = useMemo(() => (exif ? inferMakerLogoKey(exif) : null), [exif]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setMakerLogo(null);
+    if (!makerKey) return () => {};
+
+    loadMakerLogo(makerKey)
+      .then((logo) => {
+        if (cancelled) return;
+        setMakerLogo(logo);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setMakerLogo(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [makerKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return () => {};
+    if (!file) return () => {};
+    if (!loaded) return () => {};
+
+    setIsDrawing(true);
+    setRenderError(null);
+
+    try {
+      const previewSize = getPreviewSize(loaded.orientedWidth, loaded.orientedHeight, 1200);
+      const template = getTemplateById(templateId);
+
+      renderWatermark({
+        canvas,
+        image: loaded.decoded.source,
+        imageWidth: loaded.decoded.width,
+        imageHeight: loaded.decoded.height,
+        outputWidth: previewSize.width,
+        outputHeight: previewSize.height,
+        exif: exif ?? {},
+        template,
+        background: exportFormat === 'jpeg' ? jpegBackground : undefined,
+        rotation: loaded.rotation,
+        makerLogo,
+      });
+    } catch (err) {
+      if (!cancelled) setRenderError(err instanceof Error ? err.message : '预览渲染失败');
+    } finally {
+      if (!cancelled) setIsDrawing(false);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [exif, exportFormat, file, jpegBackground, loaded, makerLogo, renderRevision, templateId]);
 
   return (
     <div className={ui.panelRoot}>

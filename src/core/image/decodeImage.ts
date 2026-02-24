@@ -21,10 +21,15 @@ async function decodeWithHtmlImage(file: Blob): Promise<DecodedImage> {
   image.decoding = 'async';
   image.src = url;
 
-  await new Promise<void>((resolve, reject) => {
-    image.onload = () => resolve();
-    image.onerror = () => reject(new Error('Failed to decode image'));
-  });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('Failed to decode image'));
+    });
+  } catch (err) {
+    URL.revokeObjectURL(url);
+    throw err;
+  }
 
   return {
     source: image,

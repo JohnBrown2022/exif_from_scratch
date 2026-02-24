@@ -14,9 +14,12 @@ export function useSelectedExif(selectedFile: File | null) {
       if (!selectedFile) {
         setExif(null);
         setExifError(null);
+        setIsReadingExif(false);
         return;
       }
 
+      setExif(null);
+      setExifError(null);
       setIsReadingExif(true);
       const result = await readExif(selectedFile);
       if (cancelled) return;
@@ -40,4 +43,3 @@ export function useSelectedExif(selectedFile: File | null) {
 
   return { exif, exifError, isReadingExif };
 }
-

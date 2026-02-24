@@ -62,7 +62,6 @@ export function inferMakerLogoKey(exif: ExifData): string | null {
   if (combined.includes('OLYMPUS') || combined.includes('OM SYSTEM') || combined.includes('OM DIGITAL')) return 'olympus';
   if (combined.includes('SIGMA')) return 'sigma';
   if (combined.includes('DJI')) return 'dji';
-  if (combined.includes('HASSELBLAD')) return 'hasselblad';
   if (combined.includes('RICOH')) return 'ricoh';
   if (combined.includes('APPLE')) return 'apple';
   if (combined.includes('HUAWEI')) return 'huawei';
@@ -70,7 +69,10 @@ export function inferMakerLogoKey(exif: ExifData): string | null {
   if (combined.includes('SAMSUNG')) return 'samsung';
 
   const fallback = sanitizeKey(exif.make ?? '');
-  return fallback;
+  if (!fallback) return null;
+  if (getMakerLogoDataUrl(fallback)) return fallback;
+  if (getBuiltinLogoUrl(fallback)) return fallback;
+  return null;
 }
 
 export function getMakerLogoDataUrl(key: string): string | null {

@@ -68,56 +68,63 @@ export default function InspectorPanel(props: Props) {
       </div>
 
       <div className={panel.form}>
-        <Tabs value={tab} items={items} onChange={setTab} />
+        <Tabs value={tab} items={items} onChange={setTab} idPrefix="inspector" ariaLabel="设置面板 Tabs" />
         <div className={ui.muted} style={{ fontSize: 12 }}>
           提示：所有模板编辑设置都保存在本机浏览器（localStorage）。
         </div>
 
         {tab === 'export' ? (
-          <ExportTab
-            exportFormat={props.exportFormat}
-            onExportFormatChange={props.onExportFormatChange}
-            jpegQuality={props.jpegQuality}
-            onJpegQualityChange={props.onJpegQualityChange}
-            maxEdge={props.maxEdge}
-            onMaxEdgeChange={props.onMaxEdgeChange}
-            jpegBackground={props.jpegBackground}
-            onJpegBackgroundChange={props.onJpegBackgroundChange}
-            hasSelection={props.hasSelection}
-            imagesCount={props.imagesCount}
-            isExporting={props.isExporting}
-            exportStatus={props.exportStatus}
-            onExportSelected={props.onExportSelected}
-            onExportAll={props.onExportAll}
-          />
+          <div role="tabpanel" id="panel-inspector-export" aria-labelledby="tab-inspector-export">
+            <ExportTab
+              exportFormat={props.exportFormat}
+              onExportFormatChange={props.onExportFormatChange}
+              jpegQuality={props.jpegQuality}
+              onJpegQualityChange={props.onJpegQualityChange}
+              maxEdge={props.maxEdge}
+              onMaxEdgeChange={props.onMaxEdgeChange}
+              jpegBackground={props.jpegBackground}
+              onJpegBackgroundChange={props.onJpegBackgroundChange}
+              hasSelection={props.hasSelection}
+              imagesCount={props.imagesCount}
+              isExporting={props.isExporting}
+              exportStatus={props.exportStatus}
+              onExportSelected={props.onExportSelected}
+              onExportAll={props.onExportAll}
+            />
+          </div>
         ) : null}
 
         {tab === 'template' ? (
-          <TemplateTab
-            templateId={props.templateId}
-            onTemplateChange={props.onTemplateChange}
-            onTemplateOverridesChange={props.onTemplateOverridesChange}
-            hasSelection={props.hasSelection}
-            exif={props.exif}
-            exifError={props.exifError}
-            isReadingExif={props.isReadingExif}
-          />
+          <div role="tabpanel" id="panel-inspector-template" aria-labelledby="tab-inspector-template">
+            <TemplateTab
+              templateId={props.templateId}
+              onTemplateChange={props.onTemplateChange}
+              onTemplateOverridesChange={props.onTemplateOverridesChange}
+              hasSelection={props.hasSelection}
+              exif={props.exif}
+              exifError={props.exifError}
+              isReadingExif={props.isReadingExif}
+            />
+          </div>
         ) : null}
 
         {tab === 'layout' ? (
-          <LayoutTab templateId={props.templateId} onTemplateOverridesChange={props.onTemplateOverridesChange} />
+          <div role="tabpanel" id="panel-inspector-layout" aria-labelledby="tab-inspector-layout">
+            <LayoutTab templateId={props.templateId} onTemplateOverridesChange={props.onTemplateOverridesChange} />
+          </div>
         ) : null}
 
         {tab === 'batch' ? (
-          <BatchTab
-            batchState={props.batchState}
-            isExporting={props.isExporting}
-            onCancelBatch={props.onCancelBatch}
-            onRetryFailed={props.onRetryFailed}
-          />
+          <div role="tabpanel" id="panel-inspector-batch" aria-labelledby="tab-inspector-batch">
+            <BatchTab
+              batchState={props.batchState}
+              isExporting={props.isExporting}
+              onCancelBatch={props.onCancelBatch}
+              onRetryFailed={props.onRetryFailed}
+            />
+          </div>
         ) : null}
       </div>
     </div>
   );
 }
-

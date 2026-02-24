@@ -1,161 +1,202 @@
+/* ─── Field ─── */
+
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .labelRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .label {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .hint {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
+  line-height: 1.5;
 }
 
 .error {
-  font-size: 12px;
-  color: rgba(255, 77, 79, 0.95);
+  font-size: 11px;
+  color: var(--danger);
 }
+
+/* ─── Controls ─── */
 
 .control {
   width: 100%;
-  padding: 10px 10px;
-  border-radius: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.18);
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text);
+  transition: all 0.2s;
+}
+
+.control:hover,
+.control:focus {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
 }
 
 .range {
   width: 100%;
+  accent-color: var(--text);
 }
 
 .colorInput {
   width: 100%;
-  height: 42px;
-  padding: 6px 8px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.18);
+  height: 36px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
 }
+
+/* ─── Buttons ─── */
 
 .buttonRow {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .button {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: transparent;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text);
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 .button:hover {
-  background: var(--panel-2);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .buttonPrimary {
-  border-color: rgba(124, 92, 255, 0.55);
-  background: rgba(124, 92, 255, 0.18);
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 500;
 }
 
 .buttonPrimary:hover {
-  background: rgba(124, 92, 255, 0.25);
+  opacity: 0.85;
 }
 
 .buttonDanger {
-  border-color: rgba(255, 77, 79, 0.55);
-  background: rgba(255, 77, 79, 0.14);
+  background: rgba(255, 77, 79, 0.15);
+  color: var(--danger);
+  border: none;
 }
 
 .buttonDanger:hover {
-  background: rgba(255, 77, 79, 0.2);
+  background: rgba(255, 77, 79, 0.25);
 }
 
 .button:disabled {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
+/* ─── Tabs ─── */
+
 .tabs {
   display: flex;
-  gap: 8px;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
 }
 
 .tab {
-  flex: 1 1 0;
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.14);
-  color: var(--text);
+  flex: none;
+  padding: 8px 2px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
+  border-radius: 0;
+  transition: all 0.2s;
 }
 
 .tab:hover {
-  background: var(--panel-2);
+  color: var(--text);
 }
 
 .tabActive {
-  border-color: rgba(124, 92, 255, 0.55);
-  background: rgba(124, 92, 255, 0.16);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
+
+/* ─── Badge ─── */
 
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  padding: 4px 8px;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
   border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.18);
-  color: rgba(255, 255, 255, 0.86);
+  border: none;
+  background: var(--panel-2);
+  color: var(--text-secondary);
 }
 
 .badgeDanger {
-  border-color: rgba(255, 77, 79, 0.45);
-  background: rgba(255, 77, 79, 0.12);
+  background: var(--danger-dim);
+  color: var(--danger);
 }
 
 .badgeBrand {
-  border-color: rgba(124, 92, 255, 0.45);
-  background: rgba(124, 92, 255, 0.12);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
+/* ─── Section ─── */
+
 .section {
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.16);
-  border-radius: 12px;
-  padding: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.section:first-child {
+  border-top: none;
+  padding-top: 0;
 }
 
 .sectionTitle {
-  font-size: 12px;
-  font-weight: 650;
-  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
 }
 
+/* ─── Accordion ─── */
+
 .accordion {
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border-top: 1px solid var(--border);
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.14);
 }
 
 .accordionSummary {
@@ -163,36 +204,40 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 10px;
+  gap: 8px;
+  padding: 10px 0;
   background: transparent;
   border: 0;
-  color: var(--text);
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 12px;
+  font-weight: 500;
   text-align: left;
+  transition: color var(--transition);
 }
 
 .accordionSummary:hover {
-  background: var(--panel-2);
+  color: var(--text);
 }
 
 .accordionBody {
-  padding: 10px;
-  border-top: 1px solid var(--border);
+  padding: 0 0 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
+
+/* ─── Grid ─── */
 
 .grid2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
   align-items: start;
 }
+
+/* ─── Muted text ─── */
 
 .muted {
   color: var(--muted);
 }
-

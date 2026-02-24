@@ -432,12 +432,19 @@ function renderStack(ctx2d: CanvasRenderingContext2D, el: StackElement, box: Rec
   if (!visibleChildren.length) return;
 
   if (direction === 'horizontal') {
-    // Not needed in current migrated templates; keep as simple left-to-right stack.
+    const count = visibleChildren.length;
+    const totalGap = gap * Math.max(0, count - 1);
+    const baseChildWidth = Math.max(1, Math.round((box.width - totalGap) / Math.max(1, count)));
+
     let x = box.x;
-    for (const child of visibleChildren) {
-      const childBox = { x, y: box.y, width: box.width - (x - box.x), height: box.height };
+    for (let i = 0; i < visibleChildren.length; i++) {
+      const child = visibleChildren[i]!;
+      const isLast = i === visibleChildren.length - 1;
+      const remaining = box.x + box.width - x;
+      const width = isLast ? Math.max(1, remaining) : Math.max(1, Math.min(baseChildWidth, remaining));
+      const childBox = { x, y: box.y, width, height: box.height };
       renderElement(ctx2d, child, childBox, ctx, { inheritedAlign: align, inheritedVAlign: vAlign });
-      x += gap;
+      x += width + gap;
     }
     return;
   }

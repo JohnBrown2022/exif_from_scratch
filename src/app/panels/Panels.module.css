@@ -1,3 +1,5 @@
+/* ─── Panel Shell ─── */
+
 .panelRoot {
   height: 100%;
   display: flex;
@@ -9,72 +11,92 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 14px 10px;
+  gap: 10px;
+  padding: 16px 16px 12px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent);
 }
 
 .panelTitle {
-  font-weight: 650;
-  font-size: 13px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .panelSubtitle {
-  margin-top: 4px;
-  font-size: 12px;
+  margin-top: 2px;
+  font-size: 11px;
   color: var(--muted);
-  max-width: 46ch;
+  max-width: 50ch;
+  line-height: 1.4;
 }
 
+/* ─── Ghost Button ─── */
+
 .ghostButton {
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: none;
   background: transparent;
-  color: var(--text);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all var(--transition);
 }
 
 .ghostButton:hover {
+  color: var(--text);
   background: var(--panel-2);
 }
 
+.ghostButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ─── Empty / Drop States ─── */
+
 .emptyState {
-  padding: 14px;
+  padding: 16px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .dropHint {
-  margin: 14px;
+  margin: 12px;
   padding: 12px;
-  border-radius: 12px;
-  border: 1px dashed rgba(124, 92, 255, 0.6);
-  background: rgba(124, 92, 255, 0.12);
+  border-radius: var(--radius);
+  border: 1px dashed var(--accent);
+  background: var(--accent-dim);
   color: var(--text);
-  font-size: 13px;
+  font-size: 12px;
+  text-align: center;
 }
+
+/* ─── Image List ─── */
 
 .list {
   margin: 0;
-  padding: 10px;
+  padding: 8px;
   list-style: none;
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
 }
 
 .listItem {
   width: 100%;
   text-align: left;
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: none;
   background: transparent;
   color: var(--text);
   cursor: pointer;
+  transition: background var(--transition);
 }
 
 .listItem:hover {
@@ -84,14 +106,13 @@
 .listItemActive {
   width: 100%;
   text-align: left;
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: transparent;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent-dim);
   color: var(--text);
   cursor: pointer;
-  border-color: rgba(124, 92, 255, 0.55);
-  background: rgba(124, 92, 255, 0.14);
+  border-left: 2px solid var(--accent);
 }
 
 .listItemRow {
@@ -102,12 +123,12 @@
 }
 
 .thumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: none;
   object-fit: cover;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--surface);
   flex: 0 0 auto;
 }
 
@@ -117,17 +138,20 @@
 }
 
 .listItemName {
-  font-size: 13px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .listItemMeta {
-  margin-top: 4px;
-  font-size: 12px;
+  margin-top: 2px;
+  font-size: 10px;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
+
+/* ─── Preview ─── */
 
 .previewFrame {
   flex: 1;
@@ -135,183 +159,204 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px;
+  padding: 16px;
   position: relative;
+  background: var(--surface);
 }
 
 .previewImage {
   max-width: 100%;
   max-height: 100%;
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   object-fit: contain;
-  background: rgba(0, 0, 0, 0.2);
 }
 
 .previewOverlayTag {
   position: absolute;
-  right: 22px;
-  bottom: 22px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.9);
+  right: 20px;
+  bottom: 20px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
   pointer-events: none;
 }
 
 .previewOverlayError {
   position: absolute;
-  left: 22px;
-  top: 22px;
-  max-width: min(420px, calc(100% - 44px));
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255, 77, 79, 0.12);
-  border: 1px solid rgba(255, 77, 79, 0.3);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 12px;
+  left: 20px;
+  top: 20px;
+  max-width: min(400px, calc(100% - 40px));
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--danger-dim);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  color: var(--text);
+  font-size: 11px;
 }
 
 .previewCanvas {
   max-width: 100%;
   max-height: 100%;
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-  background: rgba(0, 0, 0, 0.2);
 }
+
+/* ─── Inspector Form ─── */
 
 .form {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 14px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .label {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .muted {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
 .select {
   width: 100%;
-  padding: 10px 10px;
-  border-radius: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.18);
+  background: var(--surface);
   color: var(--text);
+  font-size: 12px;
 }
 
 .range {
   width: 100%;
+  accent-color: var(--accent);
 }
 
 .colorInput {
   width: 100%;
-  height: 42px;
-  padding: 6px 8px;
-  border-radius: 12px;
+  height: 36px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.18);
+  background: var(--surface);
 }
+
+/* ─── Buttons ─── */
 
 .primaryButton {
-  padding: 12px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(124, 92, 255, 0.55);
-  background: rgba(124, 92, 255, 0.18);
-  color: var(--text);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
+  transition: background var(--transition);
 }
 
-.dangerButton {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 77, 79, 0.55);
-  background: rgba(255, 77, 79, 0.16);
-  color: var(--text);
-  cursor: pointer;
+.primaryButton:hover {
+  background: #6366f1;
 }
 
 .primaryButton:disabled {
-  opacity: 0.5;
+  opacity: 0.35;
   cursor: not-allowed;
+}
+
+.dangerButton {
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--danger-dim);
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.dangerButton:hover {
+  background: rgba(248, 113, 113, 0.2);
 }
 
 .buttonRow {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .checkboxRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--text-secondary);
 }
 
 .gridControls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
   align-items: start;
 }
 
 .hint {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
 }
 
+/* ─── EXIF Box ─── */
+
 .exifBox {
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.16);
-  border-radius: 12px;
-  padding: 12px;
+  border-top: 1px solid var(--border);
+  padding: 10px 0;
 }
 
 .exifTitle {
-  font-size: 12px;
-  font-weight: 650;
-  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
 }
 
 .exifLine {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.86);
-  margin-top: 4px;
+  color: var(--text-secondary);
+  margin-top: 3px;
   word-break: break-word;
 }
 
 .exifError {
-  font-size: 12px;
-  color: rgba(255, 77, 79, 0.95);
+  font-size: 11px;
+  color: var(--danger);
   margin-top: 4px;
 }
 
+/* ─── Error List ─── */
+
 .errorList {
-  border: 1px solid var(--border);
-  background: rgba(255, 77, 79, 0.08);
-  border-radius: 12px;
-  padding: 12px;
+  border-top: 1px solid var(--border);
+  padding: 10px 0;
 }
 
 .errorItems {
@@ -320,27 +365,27 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .errorItem {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  background: var(--surface);
 }
 
 .errorName {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .errorMessage {
-  font-size: 12px;
-  margin-top: 4px;
-  color: rgba(255, 255, 255, 0.78);
+  font-size: 11px;
+  margin-top: 2px;
+  color: var(--muted);
   word-break: break-word;
 }

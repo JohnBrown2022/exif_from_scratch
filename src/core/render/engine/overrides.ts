@@ -27,13 +27,77 @@ function storageKey(templateId: string): string {
   return `${STORAGE_PREFIX}${templateId}`;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function asFiniteNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function asEnum<T extends string>(value: unknown, allowed: readonly T[]): T | undefined {
+  if (typeof value !== 'string') return undefined;
+  return (allowed as readonly string[]).includes(value) ? (value as T) : undefined;
+}
+
+function sanitizeGridOverride(value: unknown): GridOverride | undefined {
+  if (!isRecord(value)) return undefined;
+  const col = asFiniteNumber(value.col);
+  const colSpan = asFiniteNumber(value.colSpan);
+  const row = asFiniteNumber(value.row);
+  const rowSpan = asFiniteNumber(value.rowSpan);
+  if (typeof col === 'undefined') return undefined;
+  if (typeof colSpan === 'undefined') return undefined;
+  if (typeof row === 'undefined') return undefined;
+  if (typeof rowSpan === 'undefined') return undefined;
+  return { col, colSpan, row, rowSpan };
+}
+
+function sanitizeElementOverride(value: unknown): ElementOverride | null {
+  if (!isRecord(value)) return null;
+  const next: ElementOverride = {};
+
+  if (value.visible === false) next.visible = false;
+
+  const grid = sanitizeGridOverride(value.grid);
+  if (grid) next.grid = grid;
+
+  const align = asEnum(value.align, ['left', 'center', 'right'] as const);
+  if (align) next.align = align;
+
+  const vAlign = asEnum(value.vAlign, ['top', 'middle', 'bottom'] as const);
+  if (vAlign) next.vAlign = vAlign;
+
+  const logoStyle = asEnum(value.logoStyle, ['color', 'mono'] as const);
+  if (logoStyle) next.logoStyle = logoStyle;
+
+  if (typeof value.monoColor === 'string') next.monoColor = value.monoColor;
+  if (typeof value.text === 'string') next.text = value.text;
+
+  return Object.keys(next).length ? next : null;
+}
+
+function sanitizeTemplateOverride(value: unknown): TemplateOverride | null {
+  if (!isRecord(value)) return null;
+  const rawElements = value.elements;
+  if (!isRecord(rawElements)) return null;
+
+  const elements: Record<string, ElementOverride> = {};
+  for (const [id, raw] of Object.entries(rawElements)) {
+    const ov = sanitizeElementOverride(raw);
+    if (ov) elements[id] = ov;
+  }
+
+  if (Object.keys(elements).length === 0) return null;
+  return { elements };
+}
+
 export function loadTemplateOverride(templateId: string): TemplateOverride | null {
   try {
     const raw = localStorage.getItem(storageKey(templateId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== 'object') return null;
-    return parsed as TemplateOverride;
+    return sanitizeTemplateOverride(parsed);
   } catch {
     return null;
   }
