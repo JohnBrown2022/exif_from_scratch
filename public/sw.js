@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_NAME = 'exif-watermark-cache-v2';
+const CACHE_NAME = 'exif-watermark-cache-v3';
 const BASE_PATH = new URL('./', self.location).pathname;
 
 function withBase(relativePath) {

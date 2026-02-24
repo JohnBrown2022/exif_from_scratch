@@ -190,39 +190,24 @@ function mergeSlots(current: Array<PresetSlot | null>, defaults: Array<PresetSlo
   return Array.from({ length: SLOTS_COUNT }, (_, i) => current[i] ?? defaults[i] ?? null);
 }
 
+function parseSeedRevision(value: string | null): number {
+  if (!value) return 0;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) return 0;
+  return parsed;
+}
+
 export function usePresetSlots() {
   const [slots, setSlots] = useState<Array<PresetSlot | null>>(() => loadFromStorage());
 
   useEffect(() => {
     let cancelled = false;
 
-    let alreadySeeded = false;
+    let seededRevision = 0;
     try {
-      alreadySeeded = localStorage.getItem(SEED_MARK_KEY) === '1';
+      seededRevision = parseSeedRevision(localStorage.getItem(SEED_MARK_KEY));
     } catch {
-      alreadySeeded = false;
-    }
-
-    if (alreadySeeded) return;
-
-    let hasAnyExisting = false;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as unknown;
-        hasAnyExisting = sanitizeSlotsFile(parsed).some(Boolean);
-      }
-    } catch {
-      hasAnyExisting = false;
-    }
-
-    if (hasAnyExisting) {
-      try {
-        localStorage.setItem(SEED_MARK_KEY, '1');
-      } catch {
-        // Ignore.
-      }
-      return;
+      seededRevision = 0;
     }
 
     (async () => {
@@ -230,13 +215,17 @@ export function usePresetSlots() {
         const res = await fetch(BUILTIN_PRESETS_URL);
         if (!res.ok) return;
         const parsed = (await res.json()) as unknown;
+        const builtinRevision =
+          isRecord(parsed) ? Math.max(0, Math.floor(asFiniteNumber(parsed.defaultsRevision) ?? 1)) : 1;
+        if (seededRevision >= builtinRevision) return;
+
         const builtinSlots = sanitizeSlotsFile(parsed);
         const hasBuiltin = builtinSlots.some(Boolean);
         if (!hasBuiltin) return;
         if (cancelled) return;
         setSlots((prev) => mergeSlots(prev, builtinSlots));
         try {
-          localStorage.setItem(SEED_MARK_KEY, '1');
+          localStorage.setItem(SEED_MARK_KEY, String(builtinRevision));
         } catch {
           // Ignore.
         }
