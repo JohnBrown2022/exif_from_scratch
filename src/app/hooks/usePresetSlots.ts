@@ -34,6 +34,7 @@ type PresetSlotsV1 = {
 };
 
 const STORAGE_KEY = 'presetSlots:v1';
+const SEED_MARK_KEY = 'presetSlotsSeeded:v1';
 const SLOTS_COUNT = 10;
 const ALLOWED_TEMPLATE_IDS = WATERMARK_TEMPLATES.map((t) => t.id);
 const BUILTIN_PRESETS_URL = `${import.meta.env.BASE_URL}exif-watermark-presets.json`;
@@ -195,14 +196,34 @@ export function usePresetSlots() {
   useEffect(() => {
     let cancelled = false;
 
-    let shouldBootstrap = false;
+    let alreadySeeded = false;
     try {
-      shouldBootstrap = localStorage.getItem(STORAGE_KEY) == null;
+      alreadySeeded = localStorage.getItem(SEED_MARK_KEY) === '1';
     } catch {
-      shouldBootstrap = false;
+      alreadySeeded = false;
     }
 
-    if (!shouldBootstrap) return;
+    if (alreadySeeded) return;
+
+    let hasAnyExisting = false;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as unknown;
+        hasAnyExisting = sanitizeSlotsFile(parsed).some(Boolean);
+      }
+    } catch {
+      hasAnyExisting = false;
+    }
+
+    if (hasAnyExisting) {
+      try {
+        localStorage.setItem(SEED_MARK_KEY, '1');
+      } catch {
+        // Ignore.
+      }
+      return;
+    }
 
     (async () => {
       try {
@@ -214,6 +235,11 @@ export function usePresetSlots() {
         if (!hasBuiltin) return;
         if (cancelled) return;
         setSlots((prev) => mergeSlots(prev, builtinSlots));
+        try {
+          localStorage.setItem(SEED_MARK_KEY, '1');
+        } catch {
+          // Ignore.
+        }
       } catch {
         // Ignore bootstrap errors (offline / blocked fetch).
       }
