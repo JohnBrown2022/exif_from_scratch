@@ -1,14 +1,7 @@
 import ui from '../../ui/ui.module.css';
 import { Field } from '../../ui/Field';
 import { Button } from '../../ui/Button';
-import { getBuiltinTemplateJson, type BatchUpdate, type ExportFormat, type JpegBackgroundMode, type TemplateId } from '../../../core';
-
-/** Returns true if the template has background area outside the photo */
-function templateHasBackground(templateId: TemplateId): boolean {
-  const json = getBuiltinTemplateJson(templateId);
-  if (!json) return false;
-  return json.layout.kind === 'photo_plus_footer';
-}
+import type { BatchUpdate, ExportFormat } from '../../../core';
 
 type Props = {
   exportFormat: ExportFormat;
@@ -17,13 +10,6 @@ type Props = {
   onJpegQualityChange: (quality: number) => void;
   maxEdge: number | 'original';
   onMaxEdgeChange: (maxEdge: number | 'original') => void;
-  jpegBackground: string;
-  onJpegBackgroundChange: (color: string) => void;
-  jpegBackgroundMode: JpegBackgroundMode;
-  onJpegBackgroundModeChange: (mode: JpegBackgroundMode) => void;
-  blurRadius: number;
-  onBlurRadiusChange: (radius: number) => void;
-  templateId: TemplateId;
   hasSelection: boolean;
   imagesCount: number;
   isExporting: boolean;
@@ -42,13 +28,6 @@ export function ExportTab({
   onJpegQualityChange,
   maxEdge,
   onMaxEdgeChange,
-  jpegBackground,
-  onJpegBackgroundChange,
-  jpegBackgroundMode,
-  onJpegBackgroundModeChange,
-  blurRadius,
-  onBlurRadiusChange,
-  templateId,
   hasSelection,
   imagesCount,
   isExporting,
@@ -59,7 +38,6 @@ export function ExportTab({
   onCancelBatch,
   onRetryFailed,
 }: Props) {
-  const hasBgArea = templateHasBackground(templateId);
   const failedCount = batchState ? batchState.jobs.filter((job) => job.status === 'error').length : 0;
   const total = batchState?.total ?? 0;
   const completed = batchState?.completed ?? 0;
@@ -92,42 +70,17 @@ export function ExportTab({
       </Field>
 
       {exportFormat === 'jpeg' ? (
-        <>
-          <Field label={`JPEG quality（${Math.round(jpegQuality * 100)}）`}>
-            <input
-              className={ui.range}
-              type="range"
-              min={60}
-              max={95}
-              step={1}
-              value={Math.round(jpegQuality * 100)}
-              onChange={(e) => onJpegQualityChange(Number(e.target.value) / 100)}
-            />
-          </Field>
-
-          <Field label="JPEG 背景">
-            <select className={ui.control} value={jpegBackgroundMode} onChange={(e) => onJpegBackgroundModeChange(e.target.value as JpegBackgroundMode)}>
-              <option value="color">纯色</option>
-              <option value="blur">照片边缘模糊</option>
-            </select>
-          </Field>
-
-          {jpegBackgroundMode === 'blur' && !hasBgArea ? (
-            <div className={ui.hint} style={{ color: 'rgba(255,200,50,0.85)' }}>
-              ⚠ 当前模板无留白区域，模糊背景不可见。请换用带底栏的模板。
-            </div>
-          ) : null}
-
-          {jpegBackgroundMode === 'color' ? (
-            <Field label="背景色">
-              <input className={ui.colorInput} type="color" value={jpegBackground} onChange={(e) => onJpegBackgroundChange(e.target.value)} />
-            </Field>
-          ) : (
-            <Field label={`模糊强度（${blurRadius}）`}>
-              <input className={ui.range} type="range" min={5} max={80} step={1} value={blurRadius} onChange={(e) => onBlurRadiusChange(Number(e.target.value))} />
-            </Field>
-          )}
-        </>
+        <Field label={`JPEG quality（${Math.round(jpegQuality * 100)}）`}>
+          <input
+            className={ui.range}
+            type="range"
+            min={60}
+            max={95}
+            step={1}
+            value={Math.round(jpegQuality * 100)}
+            onChange={(e) => onJpegQualityChange(Number(e.target.value) / 100)}
+          />
+        </Field>
       ) : null}
 
       <div className={ui.hint} style={{ marginTop: 4 }}>导出图片默认不包含 EXIF 元数据。</div>

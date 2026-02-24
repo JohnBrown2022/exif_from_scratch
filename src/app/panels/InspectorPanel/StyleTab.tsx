@@ -10,13 +10,14 @@ import {
     clearElementOverride,
     getBuiltinTemplateJson,
     loadTemplateOverride,
-    normalizeHexColor,
     saveTemplateOverride,
     setElementOverride,
     WATERMARK_TEMPLATES,
     type ElementSpec,
     type ExifData,
+    type ExportFormat,
     type GridOverride,
+    type JpegBackgroundMode,
     type TemplateId,
 } from '../../../core';
 
@@ -35,6 +36,12 @@ function isLayoutMovable(el: ElementSpec): boolean {
     return el.type === 'text' || el.type === 'maker_logo' || el.type === 'stack';
 }
 
+function templateHasBackground(templateId: TemplateId): boolean {
+    const json = getBuiltinTemplateJson(templateId);
+    if (!json) return false;
+    return json.layout.kind === 'photo_plus_footer';
+}
+
 const ALIGN_LABELS: Record<string, string> = { left: '左对齐', center: '居中', right: '右对齐' };
 const VALIGN_LABELS: Record<string, string> = { top: '顶部', middle: '居中', bottom: '底部' };
 
@@ -48,6 +55,13 @@ type Props = {
     exif: ExifData | null;
     exifError: string | null;
     isReadingExif: boolean;
+    exportFormat: ExportFormat;
+    jpegBackground: string;
+    onJpegBackgroundChange: (color: string) => void;
+    jpegBackgroundMode: JpegBackgroundMode;
+    onJpegBackgroundModeChange: (mode: JpegBackgroundMode) => void;
+    blurRadius: number;
+    onBlurRadiusChange: (radius: number) => void;
 };
 
 // ─── Sub-components ────────────────────────────────────────
@@ -105,7 +119,7 @@ function ElementCard({
 
     const hasOverride = ov.grid || ov.align || ov.vAlign;
     const label = getElementLabel(el);
-    const typeLabel = el.type === 'text' ? '文本' : el.type === 'maker_logo' ? '品牌 Logo' : el.type === 'stack' ? '堆叠组' : el.type;
+    const typeLabel = el.type === 'text' ? '文本' : el.type === 'maker_logo' ? 'Logo' : el.type === 'stack' ? '堆叠组' : el.type;
 
     return (
         <div style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -201,6 +215,13 @@ export function StyleTab({
     exif,
     exifError,
     isReadingExif,
+    exportFormat,
+    jpegBackground,
+    onJpegBackgroundChange,
+    jpegBackgroundMode,
+    onJpegBackgroundModeChange,
+    blurRadius,
+    onBlurRadiusChange,
 }: Props) {
     const templateJson = getBuiltinTemplateJson(templateId);
     const isCustomedTemplate = templateId === 'customed';
@@ -212,10 +233,6 @@ export function StyleTab({
 
     const editableLiteralTexts = flatElements
         .filter(({ el }) => el.type === 'text' && el.bind.kind === 'literal' && (isCustomedTemplate || el.editable?.text));
-
-    const makerLogoElements = flatElements
-        .map(({ el }) => el)
-        .filter((el): el is Extract<ElementSpec, { type: 'maker_logo' }> => el.type === 'maker_logo');
 
     const [query, setQuery] = useState('');
 
@@ -244,6 +261,8 @@ export function StyleTab({
     }, [filtered]);
 
     const overriddenCount = Object.keys(elementOverrides).length;
+    const hasBgArea = templateHasBackground(templateId);
+    const showBgControls = exportFormat === 'jpeg' && hasBgArea;
 
     return (
         <>
@@ -268,6 +287,28 @@ export function StyleTab({
                 <div className={ui.section}>
                     <div className={ui.sectionTitle}>EXIF 信息</div>
                     <ExifCard exif={exif} exifError={exifError} isReadingExif={isReadingExif} />
+                </div>
+            ) : null}
+
+            {/* ─── 背景（仅 JPEG + 有留白的模板） ─── */}
+            {showBgControls ? (
+                <div className={ui.section}>
+                    <div className={ui.sectionTitle}>背景</div>
+                    <Field label="模式">
+                        <select className={ui.control} value={jpegBackgroundMode} onChange={(e) => onJpegBackgroundModeChange(e.target.value as JpegBackgroundMode)}>
+                            <option value="color">纯色</option>
+                            <option value="blur">照片边缘模糊</option>
+                        </select>
+                    </Field>
+                    {jpegBackgroundMode === 'color' ? (
+                        <Field label="背景色">
+                            <input className={ui.colorInput} type="color" value={jpegBackground} onChange={(e) => onJpegBackgroundChange(e.target.value)} />
+                        </Field>
+                    ) : (
+                        <Field label={`模糊强度（${blurRadius}）`}>
+                            <input className={ui.range} type="range" min={5} max={80} step={1} value={blurRadius} onChange={(e) => onBlurRadiusChange(Number(e.target.value))} />
+                        </Field>
+                    )}
                 </div>
             ) : null}
 
@@ -302,64 +343,6 @@ export function StyleTab({
                 </div>
             ) : null}
 
-            {/* ─── 品牌 Logo ─── */}
-            {makerLogoElements.length > 0 ? (
-                <div className={ui.section}>
-                    <div className={ui.sectionTitle}>品牌 Logo</div>
-                    {makerLogoElements.map((el) => {
-                        const ov = elementOverrides[el.id] ?? {};
-                        const defaultStyle = el.style.style ?? 'color';
-                        const currentStyle = (ov.logoStyle ?? defaultStyle) as 'color' | 'mono';
-                        const defaultMonoColor = normalizeHexColor(el.style.monoColor, '#FFFFFF');
-                        const currentMonoColor = normalizeHexColor(ov.monoColor, defaultMonoColor);
-                        const canToggle = canToggleVisible(el, isCustomedTemplate);
-                        const canStyle = isCustomedTemplate || Boolean(el.editable?.logoStyle);
-                        const canMonoColor = isCustomedTemplate || Boolean(el.editable?.monoColor);
-
-                        return (
-                            <div key={el.id} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                {canToggle ? (
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={ov.visible !== false}
-                                            onChange={(e) => {
-                                                setElementOverride(templateId, el.id, { visible: e.target.checked ? undefined : false });
-                                                onTemplateOverridesChange();
-                                            }}
-                                        />
-                                        <span>显示 {getElementLabel(el)}</span>
-                                    </label>
-                                ) : null}
-                                {canStyle ? (
-                                    <Field label="Logo 风格">
-                                        <select className={ui.control} value={currentStyle}
-                                            onChange={(e) => {
-                                                const next = e.target.value as 'color' | 'mono';
-                                                setElementOverride(templateId, el.id, { logoStyle: next === defaultStyle ? undefined : next });
-                                                onTemplateOverridesChange();
-                                            }}>
-                                            <option value="color">彩色</option>
-                                            <option value="mono">单色</option>
-                                        </select>
-                                    </Field>
-                                ) : null}
-                                {currentStyle === 'mono' && canMonoColor ? (
-                                    <Field label="单色颜色">
-                                        <input className={ui.colorInput} type="color" value={currentMonoColor}
-                                            onChange={(e) => {
-                                                const next = normalizeHexColor(e.target.value, '#FFFFFF');
-                                                setElementOverride(templateId, el.id, { monoColor: next === defaultMonoColor ? undefined : next });
-                                                onTemplateOverridesChange();
-                                            }} />
-                                    </Field>
-                                ) : null}
-                            </div>
-                        );
-                    })}
-                </div>
-            ) : null}
-
             {/* ─── 元素开关（折叠） ─── */}
             {toggleable.length > 0 ? (
                 <Accordion title={`元素开关（${toggleable.length}）`} defaultOpen={false}>
@@ -367,7 +350,7 @@ export function StyleTab({
                     {toggleable.map(({ el, depth }) => {
                         const ov = elementOverrides[el.id] ?? {};
                         const prefix = depth > 0 ? '↳ '.repeat(depth) : '';
-                        const label = `${prefix}${getElementLabel(el)} · ${el.type}`;
+                        const label = `${prefix}${getElementLabel(el)}`;
 
                         return (
                             <label key={el.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>

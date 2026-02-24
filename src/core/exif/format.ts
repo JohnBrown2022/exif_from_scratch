@@ -16,9 +16,7 @@ export function formatDateTime(value: Date | undefined): string | null {
   const year = value.getFullYear();
   const month = pad2(value.getMonth() + 1);
   const day = pad2(value.getDate());
-  const hours = pad2(value.getHours());
-  const minutes = pad2(value.getMinutes());
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
+  return `${year}.${month}.${day}`;
 }
 
 export function formatCameraName(exif: ExifData): string | null {

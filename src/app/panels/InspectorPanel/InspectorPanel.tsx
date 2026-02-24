@@ -82,6 +82,13 @@ export default function InspectorPanel(props: Props) {
               exif={props.exif}
               exifError={props.exifError}
               isReadingExif={props.isReadingExif}
+              exportFormat={props.exportFormat}
+              jpegBackground={props.jpegBackground}
+              onJpegBackgroundChange={props.onJpegBackgroundChange}
+              jpegBackgroundMode={props.jpegBackgroundMode}
+              onJpegBackgroundModeChange={props.onJpegBackgroundModeChange}
+              blurRadius={props.blurRadius}
+              onBlurRadiusChange={props.onBlurRadiusChange}
             />
           </div>
         ) : null}
@@ -95,13 +102,6 @@ export default function InspectorPanel(props: Props) {
               onJpegQualityChange={props.onJpegQualityChange}
               maxEdge={props.maxEdge}
               onMaxEdgeChange={props.onMaxEdgeChange}
-              jpegBackground={props.jpegBackground}
-              onJpegBackgroundChange={props.onJpegBackgroundChange}
-              jpegBackgroundMode={props.jpegBackgroundMode}
-              onJpegBackgroundModeChange={props.onJpegBackgroundModeChange}
-              blurRadius={props.blurRadius}
-              onBlurRadiusChange={props.onBlurRadiusChange}
-              templateId={props.templateId}
               hasSelection={props.hasSelection}
               imagesCount={props.imagesCount}
               isExporting={props.isExporting}
