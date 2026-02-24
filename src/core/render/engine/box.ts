@@ -1,5 +1,7 @@
 import type { Rect } from '../templates';
 
+import { clamp } from '../../utils/clamp';
+
 import type { BoxSpec } from './types';
 import { resolveDimension } from './values';
 
@@ -45,11 +47,31 @@ export function rectFromBox(base: Rect, box: BoxSpec | undefined, scale: number)
     height = base.height - resolvedTop - resolvedBottom;
   }
 
+  let nextX = x;
+  let nextY = y;
+  let nextWidth = Math.max(0, width);
+  let nextHeight = Math.max(0, height);
+
+  // Keep boxes within the base rect. This prevents templates from placing fixed-size overlays entirely
+  // out of bounds on very small preview sizes.
+  if (nextWidth > base.width) {
+    nextWidth = Math.max(0, base.width);
+    nextX = base.x;
+  } else {
+    nextX = clamp(nextX, base.x, base.x + base.width - nextWidth);
+  }
+
+  if (nextHeight > base.height) {
+    nextHeight = Math.max(0, base.height);
+    nextY = base.y;
+  } else {
+    nextY = clamp(nextY, base.y, base.y + base.height - nextHeight);
+  }
+
   return {
-    x: Math.round(x),
-    y: Math.round(y),
-    width: Math.max(0, Math.round(width)),
-    height: Math.max(0, Math.round(height)),
+    x: Math.round(nextX),
+    y: Math.round(nextY),
+    width: Math.max(0, Math.round(nextWidth)),
+    height: Math.max(0, Math.round(nextHeight)),
   };
 }
-
