@@ -46,7 +46,7 @@ export default function App() {
     navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
 
     navigator.serviceWorker
-      .register('/sw.js')
+      .register(`${import.meta.env.BASE_URL}sw.js`)
       .then((reg) => {
         if (cancelled) return;
         setSwRegistration(reg);

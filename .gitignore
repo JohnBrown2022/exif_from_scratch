@@ -30,3 +30,9 @@ progress.md
 
 # third-party reference repos (not vendored)
 third_repo/
+
+# local HTTPS certs (mkcert, etc.)
+.certs/
+
+# iOS root cert helper (local only)
+public/rootCA.cer

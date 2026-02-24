@@ -1,14 +1,23 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_NAME = 'exif-watermark-cache-v1';
+const CACHE_NAME = 'exif-watermark-cache-v2';
+const BASE_PATH = new URL('./', self.location).pathname;
+
+function withBase(relativePath) {
+  const cleaned = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+  return `${BASE_PATH}${cleaned}`;
+}
+
 const CORE_ASSETS = [
-  '/',
-  '/manifest.webmanifest',
-  '/pwa-192.png',
-  '/pwa-512.png',
-  '/pwa-maskable-192.png',
-  '/pwa-maskable-512.png',
-  '/apple-touch-icon.png',
+  BASE_PATH,
+  withBase('index.html'),
+  withBase('manifest.webmanifest'),
+  withBase('pwa-icon.svg'),
+  withBase('pwa-192.png'),
+  withBase('pwa-512.png'),
+  withBase('pwa-maskable-192.png'),
+  withBase('pwa-maskable-512.png'),
+  withBase('apple-touch-icon.png'),
 ];
 
 self.addEventListener('install', (event) => {
@@ -48,7 +57,7 @@ function isSameOriginGet(request) {
 }
 
 function shouldBypassCache(url) {
-  return url.pathname === '/sw.js';
+  return url.pathname === withBase('sw.js');
 }
 
 async function cachePut(request, response) {
@@ -67,7 +76,7 @@ async function handleNavigation(request) {
   } catch {
     const cached = await cache.match(request);
     if (cached) return cached;
-    const shell = await cache.match('/');
+    const shell = (await cache.match(BASE_PATH)) || (await cache.match(withBase('index.html')));
     if (shell) return shell;
     return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   }
