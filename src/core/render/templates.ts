@@ -1,22 +1,10 @@
 import type { MakerLogo } from '../brand/makerLogo';
 import type { ExifData } from '../exif/types';
 
-import { getBuiltinTemplateJson } from './engine/builtins';
+import { listBuiltinTemplateJson } from './engine/builtins';
 import { createWatermarkTemplateFromDefinition } from './engine/wrapTemplate';
 
-export type TemplateId =
-  | 'classic_footer'
-  | 'customed'
-  | 'ezmark_card'
-  | 'picseal_banner'
-  | 'lightroom_footer'
-  | 'monitor_bar'
-  | 'shot_on'
-  | 'cinemascope'
-  | 'bottom_bar'
-  | 'info_block'
-  | 'film'
-  | 'minimal_corner';
+export type TemplateId = string;
 
 export type Rect = { x: number; y: number; width: number; height: number };
 
@@ -54,26 +42,9 @@ export type TemplateRenderInput = {
   makerLogo?: MakerLogo | null;
 };
 
-function builtin(id: TemplateId): WatermarkTemplate {
-  const json = getBuiltinTemplateJson(id);
-  if (!json) throw new Error(`Builtin template "${id}" not found`);
-  return createWatermarkTemplateFromDefinition(json);
-}
-
-export const WATERMARK_TEMPLATES: WatermarkTemplate[] = [
-  builtin('classic_footer'),
-  builtin('customed'),
-  builtin('ezmark_card'),
-  builtin('picseal_banner'),
-  builtin('lightroom_footer'),
-  builtin('monitor_bar'),
-  builtin('shot_on'),
-  builtin('cinemascope'),
-  builtin('bottom_bar'),
-  builtin('info_block'),
-  builtin('film'),
-  builtin('minimal_corner'),
-];
+export const WATERMARK_TEMPLATES: WatermarkTemplate[] = listBuiltinTemplateJson().map((json) =>
+  createWatermarkTemplateFromDefinition(json),
+);
 
 export function getTemplateById(id: TemplateId): WatermarkTemplate {
   const found = WATERMARK_TEMPLATES.find((template) => template.id === id);

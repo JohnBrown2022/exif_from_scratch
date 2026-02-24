@@ -4,7 +4,7 @@ import { extractPaletteFromCanvasArea } from '../image/palette';
 import type { MakerLogo } from '../brand/makerLogo';
 import { clamp } from '../utils/clamp';
 import type { TopologyWatermarkRenderOptions } from '../watermark/types';
-import { renderTopologyMountainStamp } from '../watermark/topologyMountain';
+import { getArtWatermark } from '../watermark/registry';
 import { roundRectPath } from './draw';
 import type { ImageDrawMode, Rect, TemplateId, TemplateLayout, WatermarkTemplate } from './templates';
 
@@ -170,12 +170,13 @@ function drawTopologyWatermark(
   if (minX <= maxX) x = clamp(x, minX, maxX);
   if (minY <= maxY) y = clamp(y, minY, maxY);
 
-  const stamp = renderTopologyMountainStamp({
+  const plugin = getArtWatermark('topology_mountain');
+  if (!plugin) return;
+  const stamp = plugin.renderStamp({
     seed: watermark.seed,
     sizePx: stampSize,
-    density: watermark.density,
-    noise: watermark.noise,
     alpha: watermark.alpha,
+    settings: { density: watermark.density, noise: watermark.noise },
   });
 
   ctx.save();
