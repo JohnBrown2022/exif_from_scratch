@@ -13,8 +13,17 @@ export function computeLayout(
   baseHeight: number,
 ): ComputedLayout {
   const photoDrawMode = layout.photoDrawMode ?? 'contain';
+  // Clamped scale for element rendering (text sizes, etc.)
   const scale = computeScale(baseWidth, baseHeight, scaleModel);
-  const photoCornerRadius = resolveDimension(layout.photoCornerRadius, scale, 0);
+
+  // Raw unclamped scale for layout dimensions (footerHeight, outerPadding, cornerRadius).
+  // This ensures the proportions between photo and footer remain consistent
+  // regardless of output resolution (preview at 1200px vs export at 6000px).
+  const basis = scaleModel.basis ?? 'width';
+  const numerator = basis === 'minEdge' ? Math.min(baseWidth, baseHeight || baseWidth) : baseWidth;
+  const layoutScale = numerator > 0 ? numerator / scaleModel.designWidth : 1;
+
+  const photoCornerRadius = resolveDimension(layout.photoCornerRadius, layoutScale, 0);
 
   if (layout.kind === 'photo_only') {
     const canvasWidth = baseWidth;
@@ -36,8 +45,8 @@ export function computeLayout(
   }
 
   if (layout.kind === 'photo_plus_footer') {
-    const outer = Math.max(0, resolveDimension(layout.outerPadding, scale, 0));
-    const footerHeight = resolveDimension(layout.footerHeight, scale, 0);
+    const outer = Math.max(0, resolveDimension(layout.outerPadding, layoutScale, 0));
+    const footerHeight = resolveDimension(layout.footerHeight, layoutScale, 0);
     const canvasWidth = baseWidth + outer * 2;
     const canvasHeight = baseHeight + footerHeight + outer * 2;
     const photoRect = rect(outer, outer, baseWidth, baseHeight);
