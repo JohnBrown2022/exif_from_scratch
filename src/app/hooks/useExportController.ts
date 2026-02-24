@@ -8,6 +8,7 @@ import {
   type BatchUpdate,
   type ExportFormat,
   type TemplateId,
+  type TopologyWatermarkSettings,
 } from '../../core';
 
 import type { ImageItem } from './useImages';
@@ -20,6 +21,7 @@ export type ExportControllerOptions = {
   jpegBackground: string;
   jpegBackgroundMode: 'color' | 'blur';
   blurRadius: number;
+  topologyWatermark: TopologyWatermarkSettings;
 };
 
 function createBatchJobs(targetImages: Array<{ id: string; file: File }>): BatchJob[] {
@@ -129,4 +131,3 @@ export function useExportController(input: {
     retryFailed,
   };
 }
-

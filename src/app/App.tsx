@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './App.module.css';
 import ImageListPanel from './panels/ImageListPanel';
 import PreviewPanel from './panels/PreviewPanel';
@@ -6,13 +6,18 @@ import InspectorPanel from './panels/InspectorPanel/InspectorPanel';
 import { useExportController } from './hooks/useExportController';
 import { useImages } from './hooks/useImages';
 import { useSelectedExif } from './hooks/useSelectedExif';
-import type { ExportFormat, JpegBackgroundMode, TemplateId } from '../core';
+import { fingerprintMd5Hex, type ExportFormat, type JpegBackgroundMode, type TemplateId, type TopologyWatermarkRenderOptions, type TopologyWatermarkSettings } from '../core';
+import { useTopologyWatermarkSettings } from './hooks/useTopologyWatermarkSettings';
 
 export default function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { images, selectedIndex, setSelectedIndex, selected, addFiles, removeSelected, clearAll } = useImages();
   const selectedFile = selected?.file ?? null;
+  const selectedFileKey = useMemo(
+    () => (selectedFile ? `${selectedFile.name}:${selectedFile.size}:${selectedFile.lastModified}` : null),
+    [selectedFile],
+  );
 
   const [templateId, setTemplateId] = useState<TemplateId>('bottom_bar');
   const [templateRenderRevision, setTemplateRenderRevision] = useState(0);
@@ -22,6 +27,70 @@ export default function App() {
   const [jpegBackground, setJpegBackground] = useState<string>('#000000');
   const [jpegBackgroundMode, setJpegBackgroundMode] = useState<JpegBackgroundMode>('color');
   const [blurRadius, setBlurRadius] = useState<number>(30);
+
+  const { settings: topologyWatermarkSettings, setSettings: setTopologyWatermarkSettings } = useTopologyWatermarkSettings();
+  const updateTopologyWatermarkSettings = (patch: Partial<TopologyWatermarkSettings>) => {
+    setTopologyWatermarkSettings((prev) => ({ ...prev, ...patch }));
+  };
+
+  const [topologyMd5, setTopologyMd5] = useState<string | null>(null);
+  const [topologyMd5Error, setTopologyMd5Error] = useState<string | null>(null);
+  const [isComputingTopologyMd5, setIsComputingTopologyMd5] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setTopologyMd5(null);
+    setTopologyMd5Error(null);
+    setIsComputingTopologyMd5(false);
+
+    if (!selectedFile) return () => { };
+    if (topologyWatermarkSettings.seedMode !== 'file_md5') return () => { };
+
+    setIsComputingTopologyMd5(true);
+
+    fingerprintMd5Hex(selectedFile)
+      .then((value) => {
+        if (cancelled) return;
+        setTopologyMd5(value);
+        setTopologyMd5Error(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setTopologyMd5(null);
+        setTopologyMd5Error(err instanceof Error ? err.message : 'MD5 计算失败');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setIsComputingTopologyMd5(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedFile, selectedFileKey, topologyWatermarkSettings.seedMode]);
+
+  const topologyWatermarkRender = useMemo<TopologyWatermarkRenderOptions | null>(() => {
+    if (!topologyWatermarkSettings.enabled) return null;
+
+    const manualSeed = topologyWatermarkSettings.manualSeed.trim();
+    const seed =
+      topologyWatermarkSettings.seedMode === 'manual'
+        ? manualSeed || topologyMd5 || selectedFileKey || 'default'
+        : topologyMd5 || selectedFileKey || 'default';
+
+    return {
+      enabled: true,
+      seed,
+      positionMode: topologyWatermarkSettings.positionMode,
+      x: topologyWatermarkSettings.x,
+      y: topologyWatermarkSettings.y,
+      size: topologyWatermarkSettings.size,
+      density: topologyWatermarkSettings.density,
+      noise: topologyWatermarkSettings.noise,
+      alpha: topologyWatermarkSettings.alpha,
+    };
+  }, [selectedFileKey, topologyMd5, topologyWatermarkSettings]);
 
   const { exif: selectedExif, exifError: selectedExifError, isReadingExif } = useSelectedExif(selectedFile);
   const exportController = useExportController({
@@ -35,6 +104,7 @@ export default function App() {
       jpegBackground,
       jpegBackgroundMode,
       blurRadius,
+      topologyWatermark: topologyWatermarkSettings,
     },
   });
 
@@ -100,6 +170,7 @@ export default function App() {
             jpegBackgroundMode={jpegBackgroundMode}
             blurRadius={blurRadius}
             exportFormat={exportFormat}
+            topologyWatermark={topologyWatermarkRender}
           />
         </section>
 
@@ -120,6 +191,11 @@ export default function App() {
             onJpegBackgroundModeChange={setJpegBackgroundMode}
             blurRadius={blurRadius}
             onBlurRadiusChange={setBlurRadius}
+            topologyWatermarkSettings={topologyWatermarkSettings}
+            onTopologyWatermarkSettingsChange={updateTopologyWatermarkSettings}
+            topologyMd5={topologyMd5}
+            topologyMd5Error={topologyMd5Error}
+            isComputingTopologyMd5={isComputingTopologyMd5}
             hasSelection={Boolean(selectedFile)}
             imagesCount={images.length}
             isExporting={exportController.isExporting}

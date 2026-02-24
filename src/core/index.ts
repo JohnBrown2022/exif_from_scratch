@@ -8,6 +8,10 @@ export * from './image/palette';
 
 export * from './brand/makerLogo';
 
+export * from './fingerprint/md5';
+
+export * from './watermark/types';
+
 export * from './render/templates';
 export * from './render/renderer';
 export * from './render/engine/builtins';

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 
 import panel from '../Panels.module.css';
 import { Tabs, type TabItem } from '../../ui/Tabs';
-import type { BatchUpdate, ExifData, ExportFormat, JpegBackgroundMode, TemplateId } from '../../../core';
+import type { BatchUpdate, ExifData, ExportFormat, JpegBackgroundMode, TemplateId, TopologyWatermarkSettings } from '../../../core';
 
 import { ExportTab } from './ExportTab';
 import { StyleTab } from './StyleTab';
@@ -26,6 +26,12 @@ type Props = {
   onJpegBackgroundModeChange: (mode: JpegBackgroundMode) => void;
   blurRadius: number;
   onBlurRadiusChange: (radius: number) => void;
+
+  topologyWatermarkSettings: TopologyWatermarkSettings;
+  onTopologyWatermarkSettingsChange: (patch: Partial<TopologyWatermarkSettings>) => void;
+  topologyMd5: string | null;
+  topologyMd5Error: string | null;
+  isComputingTopologyMd5: boolean;
 
   hasSelection: boolean;
   imagesCount: number;
@@ -89,6 +95,11 @@ export default function InspectorPanel(props: Props) {
               onJpegBackgroundModeChange={props.onJpegBackgroundModeChange}
               blurRadius={props.blurRadius}
               onBlurRadiusChange={props.onBlurRadiusChange}
+              topologyWatermarkSettings={props.topologyWatermarkSettings}
+              onTopologyWatermarkSettingsChange={props.onTopologyWatermarkSettingsChange}
+              topologyMd5={props.topologyMd5}
+              topologyMd5Error={props.topologyMd5Error}
+              isComputingTopologyMd5={props.isComputingTopologyMd5}
             />
           </div>
         ) : null}

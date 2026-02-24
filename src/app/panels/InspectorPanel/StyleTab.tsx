@@ -20,6 +20,7 @@ import {
     type GridOverride,
     type JpegBackgroundMode,
     type TemplateId,
+    type TopologyWatermarkSettings,
 } from '../../../core';
 
 import { clampInt, flattenElements, getElementLabel } from './templateUtils';
@@ -94,6 +95,12 @@ type Props = {
     onJpegBackgroundModeChange: (mode: JpegBackgroundMode) => void;
     blurRadius: number;
     onBlurRadiusChange: (radius: number) => void;
+
+    topologyWatermarkSettings: TopologyWatermarkSettings;
+    onTopologyWatermarkSettingsChange: (patch: Partial<TopologyWatermarkSettings>) => void;
+    topologyMd5: string | null;
+    topologyMd5Error: string | null;
+    isComputingTopologyMd5: boolean;
 };
 
 // ─── Sub-components ────────────────────────────────────────
@@ -254,6 +261,11 @@ export function StyleTab({
     onJpegBackgroundModeChange,
     blurRadius,
     onBlurRadiusChange,
+    topologyWatermarkSettings,
+    onTopologyWatermarkSettingsChange,
+    topologyMd5,
+    topologyMd5Error,
+    isComputingTopologyMd5,
 }: Props) {
     const templateJson = getBuiltinTemplateJson(templateId);
     const isCustomedTemplate = templateId === 'customed';
@@ -312,6 +324,15 @@ export function StyleTab({
             .filter((item) => item.fields.length >= 2);
     }, [flatElements, isCustomedTemplate]);
 
+    const topologyIdHint = useMemo(() => {
+        if (topologyWatermarkSettings.seedMode !== 'file_md5') return null;
+        if (!hasSelection) return '选择图片后生成 TOPOLOGY_ID';
+        if (isComputingTopologyMd5) return 'TOPOLOGY_ID 计算中…';
+        if (topologyMd5Error) return `TOPOLOGY_ID 计算失败：${topologyMd5Error}`;
+        if (topologyMd5) return `TOPOLOGY_ID: ${topologyMd5.slice(0, 8).toUpperCase()}`;
+        return 'TOPOLOGY_ID 未就绪';
+    }, [hasSelection, isComputingTopologyMd5, topologyMd5, topologyMd5Error, topologyWatermarkSettings.seedMode]);
+
     return (
         <>
             {/* ─── 模板选择 ─── */}
@@ -362,6 +383,141 @@ export function StyleTab({
                     )}
                 </div>
             ) : null}
+
+            {/* ─── 拓扑水印 ─── */}
+            <div className={ui.section}>
+                <div className={ui.sectionTitle}>拓扑水印</div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
+                    <input
+                        type="checkbox"
+                        checked={topologyWatermarkSettings.enabled}
+                        onChange={(e) => onTopologyWatermarkSettingsChange({ enabled: e.target.checked })}
+                    />
+                    <span>启用</span>
+                </label>
+                <div className={ui.hint}>仅作用于照片区域，位于模板元素下方。</div>
+
+                <Field label="种子模式">
+                    <select
+                        className={ui.control}
+                        value={topologyWatermarkSettings.seedMode}
+                        disabled={!topologyWatermarkSettings.enabled}
+                        onChange={(e) => onTopologyWatermarkSettingsChange({ seedMode: e.target.value as TopologyWatermarkSettings['seedMode'] })}
+                    >
+                        <option value="file_md5">使用图片 MD5</option>
+                        <option value="manual">自定义</option>
+                    </select>
+                </Field>
+
+                {topologyWatermarkSettings.seedMode === 'manual' ? (
+                    <Field label="自定义 Seed" hint="任意字符串；留空则回退到图片 ID">
+                        <input
+                            className={ui.control}
+                            value={topologyWatermarkSettings.manualSeed}
+                            disabled={!topologyWatermarkSettings.enabled}
+                            onChange={(e) => onTopologyWatermarkSettingsChange({ manualSeed: e.target.value })}
+                            placeholder="例如：a3f9b2c1d4e5…"
+                        />
+                    </Field>
+                ) : topologyIdHint ? (
+                    <div className={ui.hint}>{topologyIdHint}</div>
+                ) : null}
+
+                <Field label="位置">
+                    <select
+                        className={ui.control}
+                        value={topologyWatermarkSettings.positionMode}
+                        disabled={!topologyWatermarkSettings.enabled}
+                        onChange={(e) =>
+                            onTopologyWatermarkSettingsChange({ positionMode: e.target.value as TopologyWatermarkSettings['positionMode'] })
+                        }
+                    >
+                        <option value="auto">自动（避让模板）</option>
+                        <option value="manual">手动</option>
+                    </select>
+                </Field>
+
+                <Field label={`大小（${Math.round(topologyWatermarkSettings.size * 100)}%）`} hint="相对照片短边">
+                    <input
+                        className={ui.range}
+                        type="range"
+                        min={0.08}
+                        max={0.5}
+                        step={0.01}
+                        value={topologyWatermarkSettings.size}
+                        disabled={!topologyWatermarkSettings.enabled}
+                        onChange={(e) => onTopologyWatermarkSettingsChange({ size: Number(e.target.value) })}
+                    />
+                </Field>
+
+                {topologyWatermarkSettings.positionMode === 'manual' ? (
+                    <>
+                        <Field label={`X（${Math.round(topologyWatermarkSettings.x * 100)}%）`}>
+                            <input
+                                className={ui.range}
+                                type="range"
+                                min={0}
+                                max={1}
+                                step={0.01}
+                                value={topologyWatermarkSettings.x}
+                                disabled={!topologyWatermarkSettings.enabled}
+                                onChange={(e) => onTopologyWatermarkSettingsChange({ x: Number(e.target.value) })}
+                            />
+                        </Field>
+                        <Field label={`Y（${Math.round(topologyWatermarkSettings.y * 100)}%）`}>
+                            <input
+                                className={ui.range}
+                                type="range"
+                                min={0}
+                                max={1}
+                                step={0.01}
+                                value={topologyWatermarkSettings.y}
+                                disabled={!topologyWatermarkSettings.enabled}
+                                onChange={(e) => onTopologyWatermarkSettingsChange({ y: Number(e.target.value) })}
+                            />
+                        </Field>
+                    </>
+                ) : null}
+
+                <Accordion title="高级参数" defaultOpen={false}>
+                    <Field label={`排线密度（${topologyWatermarkSettings.density}）`}>
+                        <input
+                            className={ui.range}
+                            type="range"
+                            min={4}
+                            max={24}
+                            step={1}
+                            value={topologyWatermarkSettings.density}
+                            disabled={!topologyWatermarkSettings.enabled}
+                            onChange={(e) => onTopologyWatermarkSettingsChange({ density: Number(e.target.value) })}
+                        />
+                    </Field>
+                    <Field label={`岩层扭曲（${topologyWatermarkSettings.noise.toFixed(1)}）`}>
+                        <input
+                            className={ui.range}
+                            type="range"
+                            min={0}
+                            max={3}
+                            step={0.1}
+                            value={topologyWatermarkSettings.noise}
+                            disabled={!topologyWatermarkSettings.enabled}
+                            onChange={(e) => onTopologyWatermarkSettingsChange({ noise: Number(e.target.value) })}
+                        />
+                    </Field>
+                    <Field label={`透明度（${topologyWatermarkSettings.alpha.toFixed(2)}）`}>
+                        <input
+                            className={ui.range}
+                            type="range"
+                            min={0.1}
+                            max={1}
+                            step={0.05}
+                            value={topologyWatermarkSettings.alpha}
+                            disabled={!topologyWatermarkSettings.enabled}
+                            onChange={(e) => onTopologyWatermarkSettingsChange({ alpha: Number(e.target.value) })}
+                        />
+                    </Field>
+                </Accordion>
+            </div>
 
             {/* ─── 文案覆盖 ─── */}
             {editableLiteralTexts.length > 0 ? (
