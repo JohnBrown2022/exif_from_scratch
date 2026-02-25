@@ -407,6 +407,8 @@ export default function App() {
             topologyMd5={topologyMd5}
             topologyMd5Error={topologyMd5Error}
             isComputingTopologyMd5={isComputingTopologyMd5}
+            project={project}
+            onProjectChange={setProject}
             presetPayload={presetPayload}
             onApplyPresetPayload={applyPresetPayload}
             hasSelection={Boolean(selectedFile)}

@@ -2,7 +2,15 @@ import { useMemo, useState } from 'react';
 
 import panel from '../Panels.module.css';
 import { Tabs, type TabItem } from '../../ui/Tabs';
-import type { BatchUpdate, ExifData, ExportFormat, JpegBackgroundMode, TemplateId, TopologyWatermarkSettings } from '../../../core';
+import type {
+  BatchUpdate,
+  ExifData,
+  ExportFormat,
+  JpegBackgroundMode,
+  ProjectJsonV2,
+  TemplateId,
+  TopologyWatermarkSettings,
+} from '../../../core';
 import type { PresetPayload } from '../../hooks/usePresetSlots';
 
 import { ExportTab } from './ExportTab';
@@ -34,6 +42,9 @@ type Props = {
   topologyMd5: string | null;
   topologyMd5Error: string | null;
   isComputingTopologyMd5: boolean;
+
+  project: ProjectJsonV2;
+  onProjectChange: (updater: (prev: ProjectJsonV2) => ProjectJsonV2) => void;
 
   presetPayload: PresetPayload;
   onApplyPresetPayload: (payload: PresetPayload) => void;
@@ -113,10 +124,9 @@ export default function InspectorPanel(props: Props) {
         {tab === 'layers' ? (
           <div role="tabpanel" id="panel-inspector-layers" aria-labelledby="tab-inspector-layers">
             <LayersTab
-              templateId={props.templateId}
+              project={props.project}
+              onProjectChange={props.onProjectChange}
               hasSelection={props.hasSelection}
-              topologyWatermarkSettings={props.topologyWatermarkSettings}
-              onTopologyWatermarkSettingsChange={props.onTopologyWatermarkSettingsChange}
               topologyMd5={props.topologyMd5}
               topologyMd5Error={props.topologyMd5Error}
               isComputingTopologyMd5={props.isComputingTopologyMd5}
