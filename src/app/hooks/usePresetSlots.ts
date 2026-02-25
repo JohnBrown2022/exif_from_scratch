@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import {
   DEFAULT_TOPOLOGY_WATERMARK_SETTINGS,
+  createLegacyProjectV2,
   WATERMARK_TEMPLATES,
   type ExportFormat,
   type JpegBackgroundMode,
@@ -126,7 +127,18 @@ function sanitizeProjectJsonV2(raw: unknown): ProjectJsonV2 | null {
 
 function sanitizePayload(raw: unknown): PresetPayload {
   const base = DEFAULT_PAYLOAD;
-  if (!isRecord(raw)) return base;
+  if (!isRecord(raw)) {
+    return {
+      ...base,
+      project: createLegacyProjectV2({
+        templateId: base.templateId,
+        background: base.jpegBackground,
+        backgroundMode: base.jpegBackgroundMode,
+        blurRadius: base.blurRadius,
+        topologyWatermark: base.topologyWatermark,
+      }),
+    };
+  }
 
   const templateId = sanitizeTemplateId(raw.templateId);
   const exportFormat = asEnum(raw.exportFormat, ['jpeg', 'png'] as const) ?? base.exportFormat;
@@ -150,7 +162,15 @@ function sanitizePayload(raw: unknown): PresetPayload {
   // The overrides system already sanitizes on load via loadTemplateOverride.
   const templateOverrides = isRecord(raw.templateOverrides) ? (raw.templateOverrides as TemplateOverride) : null;
 
-  const project = sanitizeProjectJsonV2(raw.project);
+  const project =
+    sanitizeProjectJsonV2(raw.project) ??
+    createLegacyProjectV2({
+      templateId,
+      background: jpegBackground,
+      backgroundMode: jpegBackgroundMode,
+      blurRadius,
+      topologyWatermark,
+    });
 
   return {
     templateId,

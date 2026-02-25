@@ -12,7 +12,6 @@ import {
   createLegacyProjectV2,
   fingerprintMd5Hex,
   getTopologyAutoAnchor,
-  replaceProjectTemplate,
   type ExportFormat,
   type JpegBackgroundMode,
   type ProjectJsonV2,
@@ -146,10 +145,6 @@ export default function App() {
 
       return { ...prev, nodes: nextNodes };
     });
-  };
-
-  const updateTemplateId = (nextTemplateId: TemplateId) => {
-    setProject((prev) => replaceProjectTemplate(prev, nextTemplateId));
   };
 
   useEffect(() => {
@@ -355,7 +350,6 @@ export default function App() {
         <section className={styles.panel}>
           <InspectorPanel
             templateId={templateId}
-            onTemplateChange={updateTemplateId}
             onTemplateOverridesChange={() => setTemplateRenderRevision((prev) => prev + 1)}
             exportFormat={exportFormat}
             onExportFormatChange={setExportFormat}

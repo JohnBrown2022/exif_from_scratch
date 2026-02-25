@@ -47,7 +47,7 @@ export function PresetSlots({ currentPayload, onApplyPayload }: Props) {
 
   return (
     <Accordion title={`预设槽位（${filledCount}/10）`} defaultOpen={false}>
-      <div className={ui.hint}>保存“模板 + 水印 + 导出设置”组合到本机浏览器（localStorage）。</div>
+      <div className={ui.hint}>保存“项目（模板 + 图层 + 水印）+ 导出设置”组合到本机浏览器（localStorage）。</div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <div className={ui.hint}>{persistedLabel}</div>
@@ -221,4 +221,3 @@ export function PresetSlots({ currentPayload, onApplyPayload }: Props) {
     </Accordion>
   );
 }
-

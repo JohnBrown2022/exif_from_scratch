@@ -21,7 +21,6 @@ type TabId = 'style' | 'layers' | 'export';
 
 type Props = {
   templateId: TemplateId;
-  onTemplateChange: (id: TemplateId) => void;
   onTemplateOverridesChange: () => void;
 
   exportFormat: ExportFormat;
@@ -66,7 +65,7 @@ type Props = {
 };
 
 export default function InspectorPanel(props: Props) {
-  const [tab, setTab] = useState<TabId>('style');
+  const [tab, setTab] = useState<TabId>('layers');
 
   const failedCount = props.batchState ? props.batchState.jobs.filter((job) => job.status === 'error').length : 0;
   const batchBadge = props.batchState?.running
@@ -77,8 +76,8 @@ export default function InspectorPanel(props: Props) {
 
   const items = useMemo<TabItem<TabId>[]>(
     () => [
-      { id: 'style', label: '样式' },
       { id: 'layers', label: '图层' },
+      { id: 'style', label: '样式' },
       { id: 'export', label: '导出', badge: batchBadge },
     ],
     [batchBadge],
@@ -99,7 +98,6 @@ export default function InspectorPanel(props: Props) {
           <div role="tabpanel" id="panel-inspector-style" aria-labelledby="tab-inspector-style">
             <StyleTab
               templateId={props.templateId}
-              onTemplateChange={props.onTemplateChange}
               onTemplateOverridesChange={props.onTemplateOverridesChange}
               hasSelection={props.hasSelection}
               exif={props.exif}

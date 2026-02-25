@@ -7,11 +7,16 @@ import { Field } from '../../ui/Field';
 import {
   EXIF_FIELD_KINDS,
   ensureBuiltinNodeTypesRegistered,
+  getBuiltinTemplateJson,
   getNodeType,
   listNodeTypes,
+  replaceProjectTemplate,
+  WATERMARK_TEMPLATES,
   type ExifFieldKind,
   type ProjectJsonV2,
   type RenderNodeJson,
+  type TemplateId,
+  type TemplateJson,
 } from '../../../core';
 
 import { SettingsFieldsForm } from './SettingsFieldsForm';
@@ -82,6 +87,51 @@ const EXIF_FIELD_LABELS: Record<ExifFieldKind, string> = {
   shutter: '快门',
   iso: 'ISO',
 };
+
+function truncateLabel(value: string, maxLen: number): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= maxLen) return trimmed;
+  return `${trimmed.slice(0, Math.max(0, maxLen - 1))}…`;
+}
+
+function formatLabelList(items: string[], maxItems: number): string {
+  const trimmed = items.map((v) => v.trim()).filter(Boolean);
+  if (trimmed.length <= maxItems) return trimmed.join(' / ');
+  return `${trimmed.slice(0, maxItems).join(' / ')}…`;
+}
+
+type TemplateNodeMeta = {
+  layer: 'backdrop' | 'overlay';
+  elementId: string | null;
+};
+
+function extractTemplateNodeMeta(nodeId: string, templateId: TemplateId): TemplateNodeMeta | null {
+  const backdropPrefix = `tpl_backdrop_${templateId}`;
+  if (nodeId === backdropPrefix) return { layer: 'backdrop', elementId: null };
+  if (nodeId.startsWith(`${backdropPrefix}_`)) {
+    const elementId = nodeId.slice(`${backdropPrefix}_`.length);
+    return { layer: 'backdrop', elementId: elementId.length ? elementId : null };
+  }
+
+  const overlayPrefix = `tpl_overlay_${templateId}`;
+  if (nodeId === overlayPrefix) return { layer: 'overlay', elementId: null };
+  if (nodeId.startsWith(`${overlayPrefix}_`)) {
+    const elementId = nodeId.slice(`${overlayPrefix}_`.length);
+    return { layer: 'overlay', elementId: elementId.length ? elementId : null };
+  }
+
+  return null;
+}
+
+function getTemplateElementLabel(template: TemplateJson | null, elementId: string | null): string | null {
+  if (!template || !elementId) return null;
+  const el = template.elements.find((candidate) => candidate.id === elementId);
+  if (!el) return null;
+  const label = 'label' in el ? el.label : null;
+  if (typeof label === 'string' && label.trim().length) return label.trim();
+  if (typeof el.id === 'string' && el.id.trim().length) return el.id.trim();
+  return null;
+}
 
 function toBaseId(type: string): string {
   const last = type.split('/').filter(Boolean).pop() ?? type;
@@ -166,7 +216,9 @@ function setNodeProps(project: ProjectJsonV2, nodeId: string, nextProps: Record<
 export function LayersTab({ project, onProjectChange, hasSelection, topologyMd5, topologyMd5Error, isComputingTopologyMd5 }: Props) {
   ensureBuiltinNodeTypesRegistered();
 
-  const templateId = project.canvas.mode === 'template' ? project.canvas.templateId : 'fixed_size';
+  const templateId = project.canvas.mode === 'template' ? (project.canvas.templateId as TemplateId) : null;
+  const templateJson = useMemo(() => (templateId ? getBuiltinTemplateJson(templateId) : null), [templateId]);
+  const templateMeta = useMemo(() => (templateId ? WATERMARK_TEMPLATES.find((t) => t.id === templateId) ?? null : null), [templateId]);
   const visibleNodes = useMemo(() => (Array.isArray(project.nodes) ? project.nodes.filter(isVisibleNode) : []), [project.nodes]);
   const pluginNodeTypes = useMemo(() => listNodeTypes().filter((t) => t.type.startsWith('plugin/')), []);
   const [newPluginType, setNewPluginType] = useState<string>(() => pluginNodeTypes[0]?.type ?? 'plugin/topology_mountain');
@@ -290,14 +342,36 @@ export function LayersTab({ project, onProjectChange, hasSelection, topologyMd5,
     <>
       <div className={ui.section}>
         <div className={ui.sectionTitle}>图层</div>
-        <div className={ui.hint}>此处展示 V2 Node 图层（插件 + 基础元素）。未迁移的旧模板元素仍由 legacy 引擎绘制。</div>
+        <div className={ui.hint}>此处展示可编辑图层（模板元素 / 插件 / 基础元素）。名称会尽量从模板源码与 EXIF 绑定推导，避免反复点开确认。</div>
       </div>
 
       <div className={ui.section}>
         <div className={ui.sectionTitle}>模板</div>
-        <div className={ui.hint}>
-          当前模板：<span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}>{templateId}</span>
-        </div>
+        {templateId ? (
+          <>
+            <Field label="模板" hint="切换模板会替换模板图层，但会保留你新增的插件/自定义图层。">
+              <select
+                className={ui.control}
+                value={templateId}
+                onChange={(e) => {
+                  const next = e.target.value as TemplateId;
+                  onProjectChange((prev) => replaceProjectTemplate(prev, next));
+                }}
+              >
+                {WATERMARK_TEMPLATES.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {templateMeta?.description ? <div className={ui.hint}>{templateMeta.description}</div> : null}
+          </>
+        ) : (
+          <div className={ui.hint}>
+            当前画布：<span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}>fixed_size</span>
+          </div>
+        )}
       </div>
 
       <div className={ui.section}>
@@ -329,7 +403,53 @@ export function LayersTab({ project, onProjectChange, hasSelection, topologyMd5,
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {visibleNodes.map((node, index) => {
             const def = getNodeType(node.type);
-            const name = def?.meta.name ?? node.type;
+            const baseName = def?.meta.name ?? node.type;
+            const meta = templateId ? extractTemplateNodeMeta(node.id, templateId) : null;
+            const templateLabel = meta ? getTemplateElementLabel(templateJson, meta.elementId) : null;
+
+            let name = baseName;
+            if (node.type === 'core/text' && isRecord(node.props)) {
+              const rawBind = node.props.bind;
+              if (isTextBindingJson(rawBind)) {
+                if (rawBind.kind === 'literal') {
+                  const value = typeof rawBind.value === 'string' ? rawBind.value : '';
+                  name = value.trim().length ? `固定文案（${truncateLabel(value, 14)}）` : '固定文案';
+                } else if (rawBind.kind === 'concat') {
+                  const kinds = uniqueStable(listExifFieldKinds(rawBind)).filter((kind) => Boolean(EXIF_FIELD_LABELS[kind]));
+                  const labels = kinds.map((k) => EXIF_FIELD_LABELS[k] ?? k);
+                  name = labels.length ? `组合字段（${formatLabelList(labels, 3)}）` : '组合字段';
+                } else if ((EXIF_FIELD_KINDS as readonly string[]).includes(rawBind.kind)) {
+                  name = EXIF_FIELD_LABELS[rawBind.kind as ExifFieldKind] ?? baseName;
+                }
+              }
+            } else if (node.type === 'core/text_stack' && isRecord(node.props)) {
+              const rawItems = node.props.items;
+              const items = Array.isArray(rawItems) ? rawItems.filter((v): v is Record<string, unknown> => isRecord(v)) : [];
+              const labels = items
+                .map((item) => {
+                  if (typeof item.label === 'string' && item.label.trim().length) return item.label.trim();
+                  const bind = isTextBindingJson(item.bind) ? (item.bind as TextBindingJson) : null;
+                  if (!bind) return null;
+                  if (bind.kind === 'literal') {
+                    const value = typeof bind.value === 'string' ? bind.value : '';
+                    return value.trim().length ? truncateLabel(value, 12) : '固定文案';
+                  }
+                  if (bind.kind === 'concat') {
+                    const kinds = uniqueStable(listExifFieldKinds(bind)).filter((kind) => Boolean(EXIF_FIELD_LABELS[kind]));
+                    const exifLabels = kinds.map((k) => EXIF_FIELD_LABELS[k] ?? k);
+                    return exifLabels.length ? `组合（${formatLabelList(exifLabels, 2)}）` : '组合字段';
+                  }
+                  if ((EXIF_FIELD_KINDS as readonly string[]).includes(bind.kind)) {
+                    return EXIF_FIELD_LABELS[bind.kind as ExifFieldKind] ?? null;
+                  }
+                  return null;
+                })
+                .filter((v): v is string => Boolean(v));
+              if (labels.length) name = `${baseName}（${formatLabelList(uniqueStable(labels), 4)}）`;
+            } else if (templateLabel) {
+              name = templateLabel;
+            }
+
             const active = node.id === selectedNodeId;
             const enabled = isNodeEnabled(node);
 
@@ -363,7 +483,7 @@ export function LayersTab({ project, onProjectChange, hasSelection, topologyMd5,
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <div style={{ fontSize: 12, fontWeight: 500 }}>{name}</div>
                       <div className={ui.hint} style={{ margin: 0 }}>
-                        {node.type}
+                        {node.type} · {node.id}
                       </div>
                     </div>
                   </div>

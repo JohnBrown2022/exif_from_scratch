@@ -13,7 +13,6 @@ import {
     loadTemplateOverride,
     saveTemplateOverride,
     setElementOverride,
-    WATERMARK_TEMPLATES,
     type ElementSpec,
     type ExifData,
     type ExportFormat,
@@ -83,7 +82,6 @@ function uniqueStable<T>(items: T[]): T[] {
 
 type Props = {
     templateId: TemplateId;
-    onTemplateChange: (id: TemplateId) => void;
     onTemplateOverridesChange: () => void;
     hasSelection: boolean;
     exif: ExifData | null;
@@ -249,7 +247,6 @@ function ElementCard({
 
 export function StyleTab({
     templateId,
-    onTemplateChange,
     onTemplateOverridesChange,
     hasSelection,
     exif,
@@ -310,8 +307,6 @@ export function StyleTab({
     const hasBgArea = templateHasBackground(templateId);
     const showBgControls = exportFormat === 'jpeg' && hasBgArea;
 
-    const currentTemplate = WATERMARK_TEMPLATES.find((t) => t.id === templateId);
-
     const concatFieldControls = useMemo(() => {
         return flatElements
             .map(({ el }) => el)
@@ -337,17 +332,7 @@ export function StyleTab({
 
     return (
         <>
-            {/* ─── 模板选择 ─── */}
-            <Field label="模板">
-                <select className={ui.control} value={templateId} onChange={(e) => onTemplateChange(e.target.value as TemplateId)}>
-                    {WATERMARK_TEMPLATES.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                </select>
-            </Field>
-            {currentTemplate?.description ? (
-                <div className={ui.hint}>{currentTemplate.description}</div>
-            ) : null}
+            <div className={ui.hint}>模板切换与图层编辑已合并到「图层」Tab。</div>
 
             {isCustomedTemplate ? (
                 <div style={{ marginTop: 4 }}>
