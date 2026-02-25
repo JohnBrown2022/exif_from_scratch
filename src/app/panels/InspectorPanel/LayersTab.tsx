@@ -35,7 +35,7 @@ export function LayersTab({
   const [layer, setLayer] = useState<LayerId>('topology_mountain');
 
   const topologyDef = useMemo(() => getNodeType('plugin/topology_mountain'), []);
-  const topologyFields = topologyDef?.fields ?? [];
+  const topologyFields = useMemo(() => topologyDef?.fields ?? [], [topologyDef]);
   const basicKeys = useMemo(() => new Set(['seedMode', 'manualSeed', 'positionMode', 'size', 'x', 'y']), []);
   const basicFields = useMemo(() => topologyFields.filter((f) => basicKeys.has(f.key)), [basicKeys, topologyFields]);
   const advancedFields = useMemo(() => topologyFields.filter((f) => !basicKeys.has(f.key)), [basicKeys, topologyFields]);
@@ -120,4 +120,3 @@ export function LayersTab({
     </>
   );
 }
-
