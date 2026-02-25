@@ -347,7 +347,7 @@ export default function App() {
           />
         </section>
 
-        <section className={styles.panel}>
+        <section className={`${styles.panel} ${styles.inspectorPanel}`}>
           <InspectorPanel
             templateId={templateId}
             onTemplateOverridesChange={() => setTemplateRenderRevision((prev) => prev + 1)}
