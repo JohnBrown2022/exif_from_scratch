@@ -7,7 +7,7 @@ import { useExportController } from './hooks/useExportController';
 import { useImages } from './hooks/useImages';
 import { useSelectedExif } from './hooks/useSelectedExif';
 import type { PresetPayload } from './hooks/usePresetSlots';
-import { fingerprintMd5Hex, type ExportFormat, type JpegBackgroundMode, type TemplateId, type TopologyWatermarkRenderOptions, type TopologyWatermarkSettings } from '../core';
+import { fingerprintMd5Hex, type ExportFormat, type JpegBackgroundMode, type TemplateId, type TopologyWatermarkSettings } from '../core';
 import { loadTemplateOverride, saveTemplateOverride } from '../core/render/engine/overrides';
 import { useTopologyWatermarkSettings } from './hooks/useTopologyWatermarkSettings';
 
@@ -116,28 +116,6 @@ export default function App() {
       cancelled = true;
     };
   }, [selectedFile, selectedFileKey, topologyWatermarkSettings.seedMode]);
-
-  const topologyWatermarkRender = useMemo<TopologyWatermarkRenderOptions | null>(() => {
-    if (!topologyWatermarkSettings.enabled) return null;
-
-    const manualSeed = topologyWatermarkSettings.manualSeed.trim();
-    const seed =
-      topologyWatermarkSettings.seedMode === 'manual'
-        ? manualSeed || topologyMd5 || selectedFileKey || 'default'
-        : topologyMd5 || selectedFileKey || 'default';
-
-    return {
-      enabled: true,
-      seed,
-      positionMode: topologyWatermarkSettings.positionMode,
-      x: topologyWatermarkSettings.x,
-      y: topologyWatermarkSettings.y,
-      size: topologyWatermarkSettings.size,
-      density: topologyWatermarkSettings.density,
-      noise: topologyWatermarkSettings.noise,
-      alpha: topologyWatermarkSettings.alpha,
-    };
-  }, [selectedFileKey, topologyMd5, topologyWatermarkSettings]);
 
   const { exif: selectedExif, exifError: selectedExifError, isReadingExif } = useSelectedExif(selectedFile);
 
@@ -273,7 +251,8 @@ export default function App() {
             jpegBackgroundMode={jpegBackgroundMode}
             blurRadius={blurRadius}
             exportFormat={exportFormat}
-            topologyWatermark={topologyWatermarkRender}
+            topologyWatermarkSettings={topologyWatermarkSettings}
+            seeds={{ fileMd5: topologyMd5, fallback: selectedFileKey ?? 'default' }}
           />
         </section>
 

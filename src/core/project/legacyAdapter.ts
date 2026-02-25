@@ -1,5 +1,5 @@
 import type { TemplateId } from '../render/templates';
-import type { TopologyWatermarkRenderOptions } from '../watermark/types';
+import type { TopologyWatermarkSettings } from '../watermark/types';
 
 import type { CanvasBackground, ProjectJsonV2, RenderNodeJson } from './types';
 
@@ -30,16 +30,12 @@ function getLegacyTopologyAutoAnchor(templateId: TemplateId): 'top-right' | 'bot
   }
 }
 
-function shouldIncludeTopology(wm: TopologyWatermarkRenderOptions | null | undefined): wm is TopologyWatermarkRenderOptions {
-  return Boolean(wm?.enabled && wm.seed && wm.alpha > 0 && wm.size > 0);
-}
-
 export function createLegacyProjectV2(input: {
   templateId: TemplateId;
   background?: string;
   backgroundMode?: 'color' | 'blur';
   blurRadius?: number;
-  topologyWatermark?: TopologyWatermarkRenderOptions | null;
+  topologyWatermark?: TopologyWatermarkSettings | null;
 }): ProjectJsonV2 {
   const nodes: RenderNodeJson[] = [];
 
@@ -55,24 +51,25 @@ export function createLegacyProjectV2(input: {
     props: {},
   });
 
-  if (shouldIncludeTopology(input.topologyWatermark)) {
-    nodes.push({
-      id: 'topology_mountain',
-      type: 'plugin/topology_mountain',
-      clip: 'photo',
-      props: {
-        seed: input.topologyWatermark.seed,
-        positionMode: input.topologyWatermark.positionMode,
-        x: input.topologyWatermark.x,
-        y: input.topologyWatermark.y,
-        size: input.topologyWatermark.size,
-        density: input.topologyWatermark.density,
-        noise: input.topologyWatermark.noise,
-        alpha: input.topologyWatermark.alpha,
-        autoAnchor: getLegacyTopologyAutoAnchor(input.templateId),
-      },
-    });
-  }
+  const wm = input.topologyWatermark;
+  nodes.push({
+    id: 'topology_mountain',
+    type: 'plugin/topology_mountain',
+    enabled: Boolean(wm?.enabled),
+    clip: 'photo',
+    props: {
+      seedMode: wm?.seedMode ?? 'file_md5',
+      manualSeed: wm?.manualSeed ?? '',
+      positionMode: wm?.positionMode ?? 'auto',
+      x: wm?.x ?? 0.85,
+      y: wm?.y ?? 0.85,
+      size: wm?.size ?? 0.18,
+      density: wm?.density ?? 12,
+      noise: wm?.noise ?? 1.5,
+      alpha: wm?.alpha ?? 0.45,
+      autoAnchor: getLegacyTopologyAutoAnchor(input.templateId),
+    },
+  });
 
   nodes.push({
     id: 'template_overlay',
@@ -94,4 +91,3 @@ export function createLegacyProjectV2(input: {
     nodes,
   };
 }
-

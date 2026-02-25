@@ -6,7 +6,7 @@ import { fingerprintMd5Hex } from '../fingerprint/md5';
 import { decodeImage } from '../image/decodeImage';
 import { renderWatermark } from '../render/renderer';
 import { getTemplateById, type TemplateId } from '../render/templates';
-import type { TopologyWatermarkRenderOptions, TopologyWatermarkSettings } from '../watermark/types';
+import type { TopologyWatermarkSettings } from '../watermark/types';
 import { sanitizeFilenameSegment, stripFileExtension } from '../utils/filename';
 
 export type ExportFormat = 'png' | 'jpeg';
@@ -86,23 +86,6 @@ export async function exportWatermarkedImage(
     const template = getTemplateById(options.templateId);
 
     const fileMd5 = await md5Promise;
-    let topologyWatermark: TopologyWatermarkRenderOptions | null = null;
-    if (options.topologyWatermark?.enabled) {
-      const wm = options.topologyWatermark;
-      const manualSeed = wm.manualSeed.trim();
-      const seed = wm.seedMode === 'manual' ? manualSeed || fallbackSeed : fileMd5 || fallbackSeed;
-      topologyWatermark = {
-        enabled: true,
-        seed,
-        positionMode: wm.positionMode,
-        x: wm.x,
-        y: wm.y,
-        size: wm.size,
-        density: wm.density,
-        noise: wm.noise,
-        alpha: wm.alpha,
-      };
-    }
 
     renderWatermark({
       canvas,
@@ -118,7 +101,8 @@ export async function exportWatermarkedImage(
       blurRadius,
       rotation,
       makerLogo,
-      topologyWatermark,
+      topologyWatermark: options.topologyWatermark ?? null,
+      seeds: { fileMd5, fallback: fallbackSeed },
     });
 
     const blob = await canvasToBlob(canvas, mime, quality);

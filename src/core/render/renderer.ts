@@ -1,7 +1,7 @@
 import type { ExifData } from '../exif/types';
 import type { CanvasRotation } from '../exif/readRotation';
 import type { MakerLogo } from '../brand/makerLogo';
-import type { TopologyWatermarkRenderOptions } from '../watermark/types';
+import type { TopologyWatermarkSettings } from '../watermark/types';
 import type { WatermarkTemplate } from './templates';
 
 import { createLegacyProjectV2 } from '../project/legacyAdapter';
@@ -21,7 +21,11 @@ export type RenderRequest = {
   blurRadius?: number;
   rotation?: CanvasRotation | null;
   makerLogo?: MakerLogo | null;
-  topologyWatermark?: TopologyWatermarkRenderOptions | null;
+  topologyWatermark?: TopologyWatermarkSettings | null;
+  seeds?: {
+    fileMd5?: string | null;
+    fallback?: string;
+  };
 };
 
 export function renderWatermark({
@@ -39,6 +43,7 @@ export function renderWatermark({
   rotation,
   makerLogo,
   topologyWatermark,
+  seeds,
 }: RenderRequest) {
   const baseWidth = Math.max(1, Math.round(outputWidth));
   const baseHeight = Math.max(1, Math.round(outputHeight));
@@ -59,6 +64,7 @@ export function renderWatermark({
       image: { source: image, width: imageWidth, height: imageHeight, rotation },
       exif,
       makerLogo,
+      seeds: { fileMd5: seeds?.fileMd5 ?? null, fallback: seeds?.fallback ?? 'default' },
     },
     baseWidth,
     baseHeight,

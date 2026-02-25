@@ -13,7 +13,7 @@ import {
   type ExportFormat,
   type JpegBackgroundMode,
   type TemplateId,
-  type TopologyWatermarkRenderOptions,
+  type TopologyWatermarkSettings,
 } from '../../core';
 
 type Props = {
@@ -27,7 +27,11 @@ type Props = {
   jpegBackgroundMode: JpegBackgroundMode;
   blurRadius: number;
   exportFormat: ExportFormat;
-  topologyWatermark: TopologyWatermarkRenderOptions | null;
+  topologyWatermarkSettings: TopologyWatermarkSettings;
+  seeds: {
+    fileMd5: string | null;
+    fallback: string;
+  };
 };
 
 function getPreviewSize(width: number, height: number, maxEdge: number) {
@@ -60,7 +64,8 @@ export default function PreviewPanel({
   jpegBackgroundMode,
   blurRadius,
   exportFormat,
-  topologyWatermark,
+  topologyWatermarkSettings,
+  seeds,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -188,7 +193,8 @@ export default function PreviewPanel({
         blurRadius: exportFormat === 'jpeg' ? blurRadius : undefined,
         rotation: loaded.rotation,
         makerLogo,
-        topologyWatermark,
+        topologyWatermark: topologyWatermarkSettings,
+        seeds,
       });
     } catch (err) {
       if (!cancelled) setRenderError(err instanceof Error ? err.message : '预览渲染失败');
@@ -211,7 +217,8 @@ export default function PreviewPanel({
     makerLogo,
     renderRevision,
     templateId,
-    topologyWatermark,
+    topologyWatermarkSettings,
+    seeds,
   ]);
 
   return (
