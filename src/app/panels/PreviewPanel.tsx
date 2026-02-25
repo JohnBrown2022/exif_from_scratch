@@ -51,6 +51,23 @@ type LoadedImage = {
   orientedHeight: number;
 };
 
+const PREVIEW_DECODE_CACHE_SIZE = 3;
+const previewCache = new Map<string, Omit<LoadedImage, 'fileKey'>>();
+const previewInFlight = new Map<string, Promise<Omit<LoadedImage, 'fileKey'>>>();
+
+function setCachedPreview(fileKey: string, data: Omit<LoadedImage, 'fileKey'>) {
+  previewCache.delete(fileKey);
+  previewCache.set(fileKey, data);
+
+  if (previewCache.size <= PREVIEW_DECODE_CACHE_SIZE) return;
+
+  const oldest = previewCache.keys().next().value;
+  if (!oldest) return;
+  const oldestData = previewCache.get(oldest);
+  if (oldestData) oldestData.decoded.close();
+  previewCache.delete(oldest);
+}
+
 export default function PreviewPanel({
   file,
   project,
@@ -83,7 +100,6 @@ export default function PreviewPanel({
 
   useEffect(() => {
     let cancelled = false;
-    let decoded: DecodedImage | null = null;
 
     const canvas = canvasRef.current;
     setLoaded(null);
@@ -102,22 +118,50 @@ export default function PreviewPanel({
       }
 
       const fileKey = getFileKey(file);
+      const cached = previewCache.get(fileKey);
+      if (cached) {
+        previewCache.delete(fileKey);
+        previewCache.set(fileKey, cached);
+        setLoaded({ fileKey, ...cached });
+        setIsDecoding(false);
+        return;
+      }
+
       setIsDecoding(true);
-      const [nextDecoded, rotation] = await Promise.all([decodeImage(file), readRotation(file)]);
-      decoded = nextDecoded;
+
+      const inFlight = previewInFlight.get(fileKey);
+      const next = inFlight
+        ? await inFlight
+        : await (async () => {
+            const request = (async () => {
+              const [nextDecoded, rotation] = await Promise.all([decodeImage(file), readRotation(file)]);
+
+              const orientedWidth =
+                rotation?.canvas && rotation.dimensionSwapped ? nextDecoded.height : nextDecoded.width;
+              const orientedHeight =
+                rotation?.canvas && rotation.dimensionSwapped ? nextDecoded.width : nextDecoded.height;
+
+              return {
+                decoded: nextDecoded,
+                rotation,
+                orientedWidth,
+                orientedHeight,
+              };
+            })();
+            previewInFlight.set(fileKey, request);
+            try {
+              const result = await request;
+              return result;
+            } finally {
+              previewInFlight.delete(fileKey);
+            }
+          })();
+      setCachedPreview(fileKey, next);
 
       try {
         if (cancelled) return;
-
-        const orientedWidth =
-          rotation?.canvas && rotation.dimensionSwapped ? decoded.height : decoded.width;
-        const orientedHeight =
-          rotation?.canvas && rotation.dimensionSwapped ? decoded.width : decoded.height;
-
-        setLoaded({ fileKey, decoded, rotation, orientedWidth, orientedHeight });
+        setLoaded({ fileKey, ...next });
       } catch (err) {
-        decoded.close();
-        decoded = null;
         throw err;
       } finally {
         if (!cancelled) setIsDecoding(false);
@@ -132,7 +176,6 @@ export default function PreviewPanel({
 
     return () => {
       cancelled = true;
-      decoded?.close();
     };
   }, [file]);
 

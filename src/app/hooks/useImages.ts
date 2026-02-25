@@ -1,10 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { generateThumbnailUrl } from '../utils/generateThumbnail';
 
 export type ImageItem = {
   id: string;
   file: File;
   url: string;
+  thumbnailUrl: string | null;
 };
+
+const ADD_BATCH_SIZE = 48;
+const THUMBNAIL_BATCH_SIZE = 8;
+const THUMBNAIL_SIZE = 96;
+
+function waitNextFrame() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+}
 
 function createId() {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -27,6 +39,9 @@ export function useImages() {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const imagesRef = useRef<ImageItem[]>([]);
+  const isMountedRef = useRef(true);
+  const thumbnailPendingRef = useRef(new Set<string>());
+  const importVersionRef = useRef(0);
 
   useEffect(() => {
     imagesRef.current = images;
@@ -34,7 +49,11 @@ export function useImages() {
 
   useEffect(() => {
     return () => {
-      for (const image of imagesRef.current) URL.revokeObjectURL(image.url);
+      isMountedRef.current = false;
+      for (const image of imagesRef.current) {
+        URL.revokeObjectURL(image.url);
+        if (image.thumbnailUrl) URL.revokeObjectURL(image.thumbnailUrl);
+      }
     };
   }, []);
 
@@ -45,22 +64,109 @@ export function useImages() {
     });
   }, [images.length]);
 
+  const revokeImage = useCallback((image: ImageItem) => {
+    URL.revokeObjectURL(image.url);
+    if (image.thumbnailUrl) URL.revokeObjectURL(image.thumbnailUrl);
+  }, []);
+
+  const createImageItems = useCallback((files: File[]) => {
+    return files.map((file) => ({
+      id: createId(),
+      file,
+      url: URL.createObjectURL(file),
+      thumbnailUrl: null as string | null,
+    }));
+  }, []);
+
+  const updateImageThumbnail = useCallback((id: string, thumbnailUrl: string | null) => {
+    setImages((prev) => {
+      const index = prev.findIndex((im) => im.id === id);
+      if (index < 0) {
+        if (thumbnailUrl) URL.revokeObjectURL(thumbnailUrl);
+        return prev;
+      }
+
+      const target = prev[index];
+      if (target.thumbnailUrl) {
+        if (thumbnailUrl) URL.revokeObjectURL(thumbnailUrl);
+        return prev;
+      }
+
+      const next = [...prev];
+      next[index] = { ...target, thumbnailUrl };
+      return next;
+    });
+  }, []);
+
+  const generateThumbnails = useCallback(
+    async (items: ImageItem[]) => {
+      for (let i = 0; i < items.length; i += THUMBNAIL_BATCH_SIZE) {
+        const chunk = items.slice(i, i + THUMBNAIL_BATCH_SIZE);
+
+        await Promise.all(
+          chunk.map(async (image) => {
+            if (thumbnailPendingRef.current.has(image.id)) return;
+            thumbnailPendingRef.current.add(image.id);
+            let thumbnailUrl: string | null = null;
+
+            try {
+              thumbnailUrl = await generateThumbnailUrl(image.file, THUMBNAIL_SIZE);
+            } catch {
+              thumbnailUrl = null;
+            } finally {
+              thumbnailPendingRef.current.delete(image.id);
+            }
+
+            if (!isMountedRef.current) {
+              if (thumbnailUrl) URL.revokeObjectURL(thumbnailUrl);
+              return;
+            }
+
+            if (thumbnailUrl) updateImageThumbnail(image.id, thumbnailUrl);
+          }),
+        );
+
+        await waitNextFrame();
+      }
+    },
+    [updateImageThumbnail],
+  );
+
   function addFiles(nextFiles: FileList | File[]) {
     const next = Array.from(nextFiles).filter(isSupportedImageFile);
     if (next.length === 0) return;
 
     const wasEmpty = imagesRef.current.length === 0;
-    setImages((prev) => [
-      ...prev,
-      ...next.map((file) => ({ id: createId(), file, url: URL.createObjectURL(file) })),
-    ]);
-    if (wasEmpty) setSelectedIndex(0);
+    let cursor = 0;
+    const version = ++importVersionRef.current;
+
+    const appendBatch = () => {
+      if (importVersionRef.current !== version) return;
+      const batch = next.slice(cursor, cursor + ADD_BATCH_SIZE);
+      const imageItems = createImageItems(batch);
+      cursor += batch.length;
+      if (imageItems.length === 0) {
+        if (wasEmpty) setSelectedIndex(0);
+        return;
+      }
+
+      setImages((prev) => [...prev, ...imageItems]);
+      void generateThumbnails(imageItems);
+
+      if (cursor < next.length) {
+        requestAnimationFrame(appendBatch);
+      } else if (wasEmpty) {
+        setSelectedIndex(0);
+      }
+    };
+
+    requestAnimationFrame(appendBatch);
   }
 
   function removeSelected() {
     const target = imagesRef.current[selectedIndex];
     if (!target) return;
-    URL.revokeObjectURL(target.url);
+    revokeImage(target);
     setImages((prev) => {
       const targetIndex = prev.findIndex((im) => im.id === target.id);
       if (targetIndex < 0) return prev;
@@ -77,7 +183,8 @@ export function useImages() {
   }
 
   function clearAll() {
-    for (const image of imagesRef.current) URL.revokeObjectURL(image.url);
+    importVersionRef.current++;
+    for (const image of imagesRef.current) revokeImage(image);
     setImages([]);
     setSelectedIndex(0);
   }
