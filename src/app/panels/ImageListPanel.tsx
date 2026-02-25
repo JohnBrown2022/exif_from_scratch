@@ -9,6 +9,7 @@ import {
   type UIEvent,
 } from 'react';
 import ui from './Panels.module.css';
+import type { ImportProgress } from '../hooks/useImages';
 
 type Props = {
   images: Array<{
@@ -17,6 +18,7 @@ type Props = {
     url: string;
     thumbnailUrl: string | null;
   }>;
+  importProgress: ImportProgress;
   selectedIndex: number;
   onSelect: (index: number) => void;
   onImport: () => void;
@@ -38,8 +40,9 @@ type ImageListItemProps = {
   style: CSSProperties;
 };
 
-const LIST_ITEM_HEIGHT = 52;
+const LIST_ITEM_HEIGHT = 54;
 const LIST_OVERSCAN = 4;
+const FALLBACK_VISIBLE_ROWS = 12;
 
 const ImageListItem = memo(function ImageListItem({
   image,
@@ -73,6 +76,7 @@ const ImageListItem = memo(function ImageListItem({
 
 export default function ImageListPanel({
   images,
+  importProgress,
   selectedIndex,
   onSelect,
   onImport,
@@ -85,7 +89,11 @@ export default function ImageListPanel({
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
   const scrollRafRef = useRef<number | null>(null);
+  const listHeightRafRef = useRef<number | null>(null);
   const pendingScrollTop = useRef(0);
+  const { total, processed, currentBatch, totalBatches, isImporting } = importProgress;
+  const showImportProgress = total > 0 && isImporting;
+  const importPercent = total > 0 ? Math.round((processed / total) * 100) : 0;
 
   const empty = images.length === 0;
 
@@ -105,13 +113,18 @@ export default function ImageListPanel({
     updateHeight();
 
     const observer = new ResizeObserver(() => {
-      requestAnimationFrame(updateHeight);
+      if (listHeightRafRef.current !== null) return;
+      listHeightRafRef.current = requestAnimationFrame(() => {
+        updateHeight();
+        listHeightRafRef.current = null;
+      });
     });
 
     observer.observe(container);
 
     return () => {
       observer.disconnect();
+      if (listHeightRafRef.current !== null) cancelAnimationFrame(listHeightRafRef.current);
       if (scrollRafRef.current !== null) cancelAnimationFrame(scrollRafRef.current);
     };
   }, []);
@@ -127,10 +140,11 @@ export default function ImageListPanel({
   }, []);
 
   const totalHeight = images.length * LIST_ITEM_HEIGHT;
+  const effectiveHeight = viewportHeight > 0 ? viewportHeight : LIST_ITEM_HEIGHT * FALLBACK_VISIBLE_ROWS;
   const start = Math.max(0, Math.floor(scrollTop / LIST_ITEM_HEIGHT) - LIST_OVERSCAN);
   const end = Math.min(
     images.length,
-    Math.ceil((scrollTop + viewportHeight) / LIST_ITEM_HEIGHT) + LIST_OVERSCAN,
+    Math.ceil((scrollTop + effectiveHeight) / LIST_ITEM_HEIGHT) + LIST_OVERSCAN,
   );
   const visibleImages = images.slice(start, end);
 
@@ -157,6 +171,22 @@ export default function ImageListPanel({
         <div>
           <div className={ui.panelTitle}>图片</div>
           <div className={ui.panelSubtitle}>{description}</div>
+          {showImportProgress ? (
+            <div className={ui.importProgressRow}>
+              <div className={ui.importProgressLabel}>
+                导入中：{processed}/{total}（{currentBatch}/{totalBatches} 批次）
+              </div>
+              <div
+                className={ui.importProgressBar}
+                role="progressbar"
+                aria-valuenow={importPercent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div className={ui.importProgressFill} style={{ width: `${importPercent}%` }} />
+              </div>
+            </div>
+          ) : null}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className={ui.ghostButton} type="button" onClick={onImport}>
@@ -196,10 +226,11 @@ export default function ImageListPanel({
             {visibleImages.map((image, offset) => {
               const index = start + offset;
               const rowStyle: CSSProperties = {
-                top: index * LIST_ITEM_HEIGHT,
                 left: 0,
                 right: 0,
                 height: LIST_ITEM_HEIGHT,
+                top: 0,
+                transform: `translateY(${index * LIST_ITEM_HEIGHT}px)`,
               };
               return (
                 <ImageListItem
