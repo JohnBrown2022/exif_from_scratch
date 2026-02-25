@@ -1,10 +1,20 @@
 import type { CompiledNode, Rect, RenderEnv, RenderNodeJson } from './types';
 
+type FieldRule = { key: string; equals: string | boolean };
+
+type SettingsFieldBase = {
+  key: string;
+  label: string;
+  hint?: string;
+  showWhen?: FieldRule;
+  disabledWhen?: FieldRule;
+};
+
 export type SettingsField =
-  | { kind: 'slider'; key: string; label: string; min: number; max: number; step: number; default: number }
-  | { kind: 'toggle'; key: string; label: string; default: boolean }
-  | { kind: 'select'; key: string; label: string; options: Array<{ value: string; label: string }>; default: string }
-  | { kind: 'text'; key: string; label: string; placeholder?: string; default: string };
+  | (SettingsFieldBase & { kind: 'slider'; min: number; max: number; step: number; default: number })
+  | (SettingsFieldBase & { kind: 'toggle'; default: boolean })
+  | (SettingsFieldBase & { kind: 'select'; options: Array<{ value: string; label: string }>; default: string })
+  | (SettingsFieldBase & { kind: 'text'; placeholder?: string; default: string });
 
 export type NodeTypeDef = {
   type: string;

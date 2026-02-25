@@ -150,7 +150,9 @@ const coreImage: NodeTypeDef = {
 };
 
 type TopologyNodeProps = {
-  seed: string;
+  seed?: string;
+  seedMode: 'file_md5' | 'manual';
+  manualSeed: string;
   positionMode: 'auto' | 'manual';
   x: number;
   y: number;
@@ -161,19 +163,25 @@ type TopologyNodeProps = {
   noise: number;
 };
 
-function sanitizeTopologyProps(raw: unknown): TopologyNodeProps | null {
-  if (!isRecord(raw)) return null;
-  const seed = typeof raw.seed === 'string' ? raw.seed : '';
-  const positionMode = asEnum(raw.positionMode, ['auto', 'manual'] as const) ?? 'auto';
-  const x = clamp(asFiniteNumber(raw.x) ?? 0.85, 0, 1);
-  const y = clamp(asFiniteNumber(raw.y) ?? 0.85, 0, 1);
-  const size = clamp(asFiniteNumber(raw.size) ?? 0.18, 0, 1);
-  const autoAnchor = asEnum(raw.autoAnchor, ['top-right', 'bottom-right'] as const);
-  const alpha = clamp(asFiniteNumber(raw.alpha) ?? 0.45, 0, 1);
-  const density = clamp(Math.round(asFiniteNumber(raw.density) ?? 12), 4, 24);
-  const noise = clamp(asFiniteNumber(raw.noise) ?? 1.5, 0, 3);
-  if (!seed.trim()) return null;
-  return { seed, positionMode, x, y, size, autoAnchor, alpha, density, noise };
+function sanitizeTopologyProps(raw: unknown): TopologyNodeProps {
+  const record = isRecord(raw) ? raw : {};
+
+  const seedRaw = typeof record.seed === 'string' ? record.seed.trim() : '';
+  const seed = seedRaw.length ? seedRaw : undefined;
+
+  const seedMode = asEnum(record.seedMode, ['file_md5', 'manual'] as const) ?? 'file_md5';
+  const manualSeed = typeof record.manualSeed === 'string' ? record.manualSeed : '';
+
+  const positionMode = asEnum(record.positionMode, ['auto', 'manual'] as const) ?? 'auto';
+  const x = clamp(asFiniteNumber(record.x) ?? 0.85, 0, 1);
+  const y = clamp(asFiniteNumber(record.y) ?? 0.85, 0, 1);
+  const size = clamp(asFiniteNumber(record.size) ?? 0.18, 0, 1);
+  const autoAnchor = asEnum(record.autoAnchor, ['top-right', 'bottom-right'] as const);
+  const alpha = clamp(asFiniteNumber(record.alpha) ?? 0.45, 0, 1);
+  const density = clamp(Math.round(asFiniteNumber(record.density) ?? 12), 4, 24);
+  const noise = clamp(asFiniteNumber(record.noise) ?? 1.5, 0, 3);
+
+  return { seed, seedMode, manualSeed, positionMode, x, y, size, autoAnchor, alpha, density, noise };
 }
 
 function computeTopologyRect(env: RenderEnv, input: TopologyNodeProps): { x: number; y: number; width: number; height: number } {
@@ -211,29 +219,81 @@ function computeTopologyRect(env: RenderEnv, input: TopologyNodeProps): { x: num
   return { x: Math.round(cx - half), y: Math.round(cy - half), width: stampSize, height: stampSize };
 }
 
+function resolveTopologySeed(props: TopologyNodeProps, env: RenderEnv): string {
+  if (props.seed && props.seed.trim().length) return props.seed.trim();
+
+  const fallback = env.seeds?.fallback ?? 'default';
+  const fileMd5 = env.seeds?.fileMd5?.trim() || '';
+
+  if (props.seedMode === 'manual') {
+    const manual = props.manualSeed.trim();
+    return manual || fileMd5 || fallback;
+  }
+
+  return fileMd5 || fallback;
+}
+
 const topologyMountain: NodeTypeDef = {
   type: 'plugin/topology_mountain',
   meta: { name: '山水徽', description: '生成式艺术印章（拓扑山水）。' },
-  sanitizeProps: (raw) =>
-    sanitizeTopologyProps(raw) ?? {
-      seed: 'default',
-      positionMode: 'auto',
-      x: 0.85,
-      y: 0.85,
-      size: 0.18,
-      autoAnchor: 'bottom-right',
-      alpha: 0.45,
-      density: 12,
-      noise: 1.5,
+  fields: [
+    {
+      kind: 'select',
+      key: 'seedMode',
+      label: '种子',
+      options: [
+        { value: 'file_md5', label: '按照片（TOPOLOGY_ID）' },
+        { value: 'manual', label: '手动' },
+      ],
+      default: 'file_md5',
     },
+    {
+      kind: 'text',
+      key: 'manualSeed',
+      label: '手动种子',
+      placeholder: '留空则回退 TOPOLOGY_ID',
+      default: '',
+      showWhen: { key: 'seedMode', equals: 'manual' },
+    },
+    {
+      kind: 'select',
+      key: 'positionMode',
+      label: '位置',
+      options: [
+        { value: 'auto', label: '自动（避让模板）' },
+        { value: 'manual', label: '手动' },
+      ],
+      default: 'auto',
+    },
+    { kind: 'slider', key: 'size', label: '大小', min: 0.08, max: 0.5, step: 0.01, default: 0.18, hint: '相对照片短边' },
+    { kind: 'slider', key: 'x', label: 'X', min: 0, max: 1, step: 0.01, default: 0.85, showWhen: { key: 'positionMode', equals: 'manual' } },
+    { kind: 'slider', key: 'y', label: 'Y', min: 0, max: 1, step: 0.01, default: 0.85, showWhen: { key: 'positionMode', equals: 'manual' } },
+    { kind: 'slider', key: 'density', label: '排线密度', min: 4, max: 24, step: 1, default: 12 },
+    { kind: 'slider', key: 'noise', label: '岩层扭曲', min: 0, max: 3, step: 0.1, default: 1.5 },
+    { kind: 'slider', key: 'alpha', label: '透明度', min: 0.1, max: 1, step: 0.05, default: 0.45 },
+  ],
+  defaultProps: {
+    seedMode: 'file_md5',
+    manualSeed: '',
+    positionMode: 'auto',
+    x: 0.85,
+    y: 0.85,
+    size: 0.18,
+    autoAnchor: 'bottom-right',
+    alpha: 0.45,
+    density: 12,
+    noise: 1.5,
+  },
+  sanitizeProps: sanitizeTopologyProps,
   resolveRect: ({ env, props }) => computeTopologyRect(env, props as TopologyNodeProps),
-  render: (ctx2d, node: CompiledNode) => {
+  render: (ctx2d, node: CompiledNode, env) => {
     const props = node.props as unknown as TopologyNodeProps;
+    const seed = resolveTopologySeed(props, env);
     const sizePx = Math.max(1, Math.round(Math.min(node.rect.width, node.rect.height)));
     if (sizePx <= 1) return;
 
     const stamp = renderTopologyMountainStamp({
-      seed: props.seed,
+      seed,
       sizePx,
       density: props.density,
       noise: props.noise,

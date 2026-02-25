@@ -6,16 +6,9 @@ import type { TemplateId, WatermarkTemplate } from '../render/templates';
 import { getTemplateById } from '../render/templates';
 
 import { resolveNodeRect, type LayoutEnv } from './layout';
-import { registerBuiltinNodeTypes } from './builtins';
+import { ensureBuiltinNodeTypesRegistered } from './init';
 import { getNodeType } from './registry';
 import type { CanvasBackground, CompiledNode, CompiledProject, ProjectJsonV2, Rect, RenderEnv, RenderEnvInput } from './types';
-
-let builtinsRegistered = false;
-function ensureBuiltins() {
-  if (builtinsRegistered) return;
-  registerBuiltinNodeTypes();
-  builtinsRegistered = true;
-}
 
 function rect(x: number, y: number, width: number, height: number): Rect {
   return { x, y, width, height };
@@ -191,7 +184,7 @@ export type RenderProjectRequest = {
 };
 
 export function compileProject(request: Omit<RenderProjectRequest, 'canvas'>): { project: CompiledProject; env: RenderEnv; template: WatermarkTemplate | null } {
-  ensureBuiltins();
+  ensureBuiltinNodeTypesRegistered();
 
   const background = normalizeBackground(request.project.canvas.background);
 
@@ -273,7 +266,7 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function renderProject(request: RenderProjectRequest) {
-  ensureBuiltins();
+  ensureBuiltinNodeTypesRegistered();
 
   const { project: compiled, env: baseEnv, template } = compileProject({
     project: request.project,
