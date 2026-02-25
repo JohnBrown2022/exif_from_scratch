@@ -1,0 +1,217 @@
+{
+  "templateId": "ezmark_card",
+  "backdropNodes": [
+    {
+      "id": "tpl_backdrop_ezmark_card_card_bg",
+      "type": "core/rect",
+      "props": {
+        "zone": "content",
+        "style": {
+          "fill": "rgba(255,255,255,0.98)",
+          "radius": {
+            "designPx": 18,
+            "minPx": 14
+          },
+          "shadow": {
+            "color": "rgba(0,0,0,0.22)",
+            "blur": {
+              "designPx": 22,
+              "minPx": 10
+            },
+            "offsetY": {
+              "designPx": 10,
+              "minPx": 6
+            }
+          }
+        }
+      }
+    }
+  ],
+  "overlayNodes": [
+    {
+      "id": "tpl_overlay_ezmark_card_footer_divider",
+      "type": "core/divider",
+      "props": {
+        "zone": "footer",
+        "style": {
+          "color": "rgba(0,0,0,0.06)",
+          "thickness": 1
+        },
+        "orientation": "horizontal",
+        "position": "top"
+      }
+    },
+    {
+      "id": "tpl_overlay_ezmark_card_left_stack",
+      "type": "core/text_stack",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 1,
+          "colSpan": 7,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "direction": "vertical",
+        "gap": {
+          "designPx": 6,
+          "minPx": 4
+        },
+        "align": "left",
+        "vAlign": "top",
+        "items": [
+          {
+            "id": "camera",
+            "label": "相机",
+            "bind": {
+              "kind": "cameraName",
+              "fallback": "相机"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 750,
+              "size": {
+                "designPx": 18,
+                "minPx": 14
+              },
+              "color": "rgba(0,0,0,0.88)",
+              "align": "left",
+              "vAlign": "top"
+            }
+          },
+          {
+            "id": "date",
+            "label": "日期",
+            "bind": {
+              "kind": "dateTime"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 650,
+              "size": {
+                "designPx": 12,
+                "minPx": 10
+              },
+              "color": "rgba(0,0,0,0.42)",
+              "align": "left",
+              "vAlign": "top"
+            },
+            "hideWhenEmpty": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "tpl_overlay_ezmark_card_maker_logo",
+      "type": "core/maker_logo",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 8,
+          "colSpan": 5,
+          "row": 1,
+          "rowSpan": 5
+        },
+        "style": {
+          "style": "color",
+          "opacity": 0.82,
+          "align": "right",
+          "vAlign": "top",
+          "maxWidth": {
+            "designPx": 140,
+            "minPx": 110
+          },
+          "maxHeight": {
+            "designPx": 22,
+            "minPx": 16
+          }
+        },
+        "condition": {
+          "showWhenMakerLogoPresent": true
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_ezmark_card_maker_text",
+      "type": "core/text",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 8,
+          "colSpan": 5,
+          "row": 1,
+          "rowSpan": 5
+        },
+        "style": {
+          "font": "sans",
+          "weight": 800,
+          "size": {
+            "designPx": 12,
+            "minPx": 10
+          },
+          "color": "rgba(0,0,0,0.72)",
+          "align": "right",
+          "vAlign": "top"
+        },
+        "bind": {
+          "kind": "makeUpper",
+          "fallback": "EXIF"
+        },
+        "condition": {
+          "showWhenMakerLogoMissing": true
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_ezmark_card_settings",
+      "type": "core/text",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 8,
+          "colSpan": 5,
+          "row": 6,
+          "rowSpan": 5
+        },
+        "style": {
+          "font": "sans",
+          "weight": 650,
+          "size": {
+            "designPx": 12,
+            "minPx": 10
+          },
+          "color": "rgba(0,0,0,0.72)",
+          "align": "right",
+          "vAlign": "top"
+        },
+        "bind": {
+          "kind": "settings",
+          "joinWith": "  ",
+          "fallback": "—"
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_ezmark_card_swatches",
+      "type": "core/swatches",
+      "props": {
+        "zone": "footer_swatches",
+        "style": {
+          "radius": {
+            "designPx": 7,
+            "minPx": 6
+          },
+          "gap": {
+            "designPx": 8,
+            "minPx": 6
+          },
+          "stroke": "rgba(0,0,0,0.12)"
+        },
+        "condition": {
+          "showWhenPalettePresent": true
+        },
+        "count": 4
+      }
+    }
+  ]
+}

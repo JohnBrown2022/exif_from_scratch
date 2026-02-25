@@ -28,4 +28,7 @@ export * from './project/registry';
 export * from './project/init';
 export { renderProject, compileProject } from './project/pipeline';
 export { createLegacyProjectV2 } from './project/legacyAdapter';
+export { isNativeV2TemplateId } from './project/nativeTemplates';
+export { getTemplateNodeBundle, getTopologyAutoAnchor } from './project/templateNodes';
+export { replaceProjectTemplate } from './project/templateOps';
 export type { CanvasBackground, CanvasSpec, NodeClip, NodeLayout, ProjectJsonV2, RenderNodeJson } from './project/types';

@@ -1,0 +1,177 @@
+{
+  "templateId": "classic_footer",
+  "backdropNodes": [],
+  "overlayNodes": [
+    {
+      "id": "tpl_overlay_classic_footer_footer_bg",
+      "type": "core/rect",
+      "props": {
+        "zone": "footer",
+        "style": {
+          "fill": "rgba(255,255,255,0.98)"
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_classic_footer_footer_topline",
+      "type": "core/divider",
+      "props": {
+        "zone": "footer",
+        "style": {
+          "color": "rgba(0,0,0,0.06)",
+          "thickness": 1
+        },
+        "orientation": "horizontal",
+        "position": "top"
+      }
+    },
+    {
+      "id": "tpl_overlay_classic_footer_left_stack",
+      "type": "core/text_stack",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 1,
+          "colSpan": 5,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "direction": "vertical",
+        "gap": {
+          "designPx": 6,
+          "minPx": 4
+        },
+        "align": "left",
+        "vAlign": "middle",
+        "items": [
+          {
+            "id": "camera",
+            "label": "相机",
+            "bind": {
+              "kind": "cameraName",
+              "fallback": "相机"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 750,
+              "size": {
+                "designPx": 20,
+                "minPx": 14
+              },
+              "color": "rgba(20,20,22,0.92)",
+              "align": "left",
+              "vAlign": "top"
+            }
+          },
+          {
+            "id": "lens",
+            "label": "镜头",
+            "bind": {
+              "kind": "lensName"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 650,
+              "size": {
+                "designPx": 13,
+                "minPx": 10
+              },
+              "color": "rgba(60,60,66,0.62)",
+              "align": "left",
+              "vAlign": "top"
+            },
+            "hideWhenEmpty": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "tpl_overlay_classic_footer_settings",
+      "type": "core/text",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 8,
+          "colSpan": 5,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "style": {
+          "font": "sans",
+          "weight": 700,
+          "size": {
+            "designPx": 14,
+            "minPx": 11
+          },
+          "color": "rgba(20,20,22,0.9)",
+          "align": "right",
+          "vAlign": "middle"
+        },
+        "bind": {
+          "kind": "settings",
+          "joinWith": " | ",
+          "fallback": "—"
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_classic_footer_maker_logo",
+      "type": "core/maker_logo",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 6,
+          "colSpan": 2,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "style": {
+          "style": "color",
+          "opacity": 0.55,
+          "align": "center",
+          "vAlign": "middle",
+          "maxWidth": {
+            "designPx": 216
+          },
+          "maxHeight": {
+            "designPx": 22
+          }
+        },
+        "condition": {
+          "showWhenMakerLogoPresent": true
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_classic_footer_maker_text",
+      "type": "core/text",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 6,
+          "colSpan": 2,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "style": {
+          "font": "sans",
+          "weight": 700,
+          "size": {
+            "designPx": 12,
+            "minPx": 10
+          },
+          "color": "rgba(20,20,22,0.46)",
+          "align": "center",
+          "vAlign": "middle"
+        },
+        "bind": {
+          "kind": "makeUpper",
+          "fallback": "EXIF"
+        },
+        "condition": {
+          "showWhenMakerLogoMissing": true
+        }
+      }
+    }
+  ]
+}

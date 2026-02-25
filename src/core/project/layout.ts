@@ -2,7 +2,7 @@ import { clamp } from '../utils/clamp';
 
 import type { Anchor, Length, NodeLayout, Rect } from './types';
 
-export type LayoutEnv = { canvas: { width: number; height: number }; photoRect: Rect };
+export type LayoutEnv = { canvas: { width: number; height: number }; imageRect: Rect; photoRect: Rect };
 
 function rect(x: number, y: number, width: number, height: number): Rect {
   return { x, y, width, height };
@@ -62,8 +62,10 @@ function anchorPoint(anchor: Anchor, box: Rect): { x: number; y: number } {
   }
 }
 
-function defaultRectFor(relativeTo: 'canvas' | 'photo', env: LayoutEnv): Rect {
-  return relativeTo === 'photo' ? env.photoRect : rect(0, 0, env.canvas.width, env.canvas.height);
+function defaultRectFor(relativeTo: 'canvas' | 'image' | 'photo', env: LayoutEnv): Rect {
+  if (relativeTo === 'photo') return env.photoRect;
+  if (relativeTo === 'image') return env.imageRect;
+  return rect(0, 0, env.canvas.width, env.canvas.height);
 }
 
 export function resolveNodeRect(layout: NodeLayout | undefined, env: LayoutEnv): Rect {

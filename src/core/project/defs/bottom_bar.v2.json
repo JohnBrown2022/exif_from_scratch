@@ -1,0 +1,107 @@
+{
+  "templateId": "bottom_bar",
+  "backdropNodes": [],
+  "overlayNodes": [
+    {
+      "id": "tpl_overlay_bottom_bar_bar_bg",
+      "type": "core/rect",
+      "props": {
+        "zone": "bar",
+        "style": {
+          "fill": "rgba(0,0,0,0.55)"
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_bottom_bar_lines",
+      "type": "core/text_stack",
+      "props": {
+        "zone": "bar",
+        "grid": {
+          "col": 1,
+          "colSpan": 12,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "direction": "vertical",
+        "gap": {
+          "designPx": 8,
+          "minPx": 5
+        },
+        "align": "left",
+        "vAlign": "top",
+        "items": [
+          {
+            "id": "camera",
+            "label": "相机",
+            "bind": {
+              "kind": "cameraName",
+              "fallback": "无 EXIF"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 650,
+              "size": {
+                "designPx": 32,
+                "minPx": 14
+              },
+              "lineHeight": 1.05,
+              "color": "rgba(255,255,255,0.94)",
+              "align": "left",
+              "vAlign": "top"
+            }
+          },
+          {
+            "id": "secondary",
+            "label": "镜头/参数",
+            "bind": {
+              "kind": "concat",
+              "parts": [
+                {
+                  "kind": "lensName"
+                },
+                {
+                  "kind": "settings"
+                }
+              ],
+              "joinWith": " · "
+            },
+            "style": {
+              "font": "sans",
+              "weight": 500,
+              "size": {
+                "designPx": 28,
+                "minPx": 12
+              },
+              "lineHeight": 1.05,
+              "color": "rgba(255,255,255,0.94)",
+              "align": "left",
+              "vAlign": "top"
+            },
+            "hideWhenEmpty": true
+          },
+          {
+            "id": "date",
+            "label": "日期",
+            "bind": {
+              "kind": "dateTime"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 500,
+              "size": {
+                "designPx": 26,
+                "minPx": 12
+              },
+              "lineHeight": 1.05,
+              "color": "rgba(255,255,255,0.94)",
+              "align": "left",
+              "vAlign": "top"
+            },
+            "hideWhenEmpty": true
+          }
+        ]
+      }
+    }
+  ]
+}

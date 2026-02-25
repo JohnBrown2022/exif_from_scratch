@@ -1,0 +1,39 @@
+{
+  "templateId": "monitor_bar",
+  "backdropNodes": [],
+  "overlayNodes": [
+    {
+      "id": "tpl_overlay_monitor_bar_bar_bg",
+      "type": "core/rect",
+      "props": {
+        "zone": "bar",
+        "style": {
+          "fill": "rgba(0,0,0,0.55)"
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_monitor_bar_settings",
+      "type": "core/text",
+      "props": {
+        "zone": "bar",
+        "style": {
+          "font": "mono",
+          "weight": 700,
+          "size": {
+            "designPx": 15,
+            "minPx": 12
+          },
+          "color": "rgba(255,255,255,0.92)",
+          "align": "center",
+          "vAlign": "middle"
+        },
+        "bind": {
+          "kind": "settings",
+          "joinWith": "  ",
+          "fallback": "—"
+        }
+      }
+    }
+  ]
+}

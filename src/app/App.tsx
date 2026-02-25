@@ -11,6 +11,8 @@ import {
   DEFAULT_TOPOLOGY_WATERMARK_SETTINGS,
   createLegacyProjectV2,
   fingerprintMd5Hex,
+  getTopologyAutoAnchor,
+  replaceProjectTemplate,
   type ExportFormat,
   type JpegBackgroundMode,
   type ProjectJsonV2,
@@ -125,15 +127,7 @@ export default function App() {
     setProject((prev) => {
       const nodes = Array.isArray(prev.nodes) ? prev.nodes : [];
       const template = prev.canvas.mode === 'template' ? (prev.canvas.templateId as TemplateId) : 'bottom_bar';
-      const autoAnchor =
-        template === 'bottom_bar' ||
-        template === 'monitor_bar' ||
-        template === 'shot_on' ||
-        template === 'film' ||
-        template === 'lightroom_footer' ||
-        template === 'minimal_corner'
-          ? 'top-right'
-          : 'bottom-right';
+      const autoAnchor = getTopologyAutoAnchor(template);
 
       const nextNodes = nodes.map((node) => {
         if (node.id !== 'topology_mountain' || node.type !== 'plugin/topology_mountain') return node;
@@ -155,31 +149,7 @@ export default function App() {
   };
 
   const updateTemplateId = (nextTemplateId: TemplateId) => {
-    setProject((prev) => {
-      if (prev.canvas.mode !== 'template') return prev;
-
-      const autoAnchor =
-        nextTemplateId === 'bottom_bar' ||
-        nextTemplateId === 'monitor_bar' ||
-        nextTemplateId === 'shot_on' ||
-        nextTemplateId === 'film' ||
-        nextTemplateId === 'lightroom_footer' ||
-        nextTemplateId === 'minimal_corner'
-          ? 'top-right'
-          : 'bottom-right';
-
-      const nextNodes = prev.nodes.map((node) => {
-        if (node.type === 'legacy/template_layer') {
-          return { ...node, props: { ...node.props, templateId: nextTemplateId } };
-        }
-        if (node.id === 'topology_mountain' && node.type === 'plugin/topology_mountain') {
-          return { ...node, props: { ...node.props, autoAnchor } };
-        }
-        return node;
-      });
-
-      return { ...prev, canvas: { ...prev.canvas, templateId: nextTemplateId }, nodes: nextNodes };
-    });
+    setProject((prev) => replaceProjectTemplate(prev, nextTemplateId));
   };
 
   useEffect(() => {

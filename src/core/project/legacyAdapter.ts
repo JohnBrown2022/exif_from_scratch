@@ -2,6 +2,7 @@ import type { TemplateId } from '../render/templates';
 import type { TopologyWatermarkSettings } from '../watermark/types';
 
 import type { CanvasBackground, ProjectJsonV2, RenderNodeJson } from './types';
+import { getTemplateNodeBundle, getTopologyAutoAnchor } from './templateNodes';
 
 function backgroundFromLegacy(input: {
   background?: string;
@@ -16,20 +17,6 @@ function backgroundFromLegacy(input: {
   return { mode: 'color', color: background };
 }
 
-function getLegacyTopologyAutoAnchor(templateId: TemplateId): 'top-right' | 'bottom-right' {
-  switch (templateId) {
-    case 'bottom_bar':
-    case 'monitor_bar':
-    case 'shot_on':
-    case 'film':
-    case 'lightroom_footer':
-    case 'minimal_corner':
-      return 'top-right';
-    default:
-      return 'bottom-right';
-  }
-}
-
 export function createLegacyProjectV2(input: {
   templateId: TemplateId;
   background?: string;
@@ -38,12 +25,9 @@ export function createLegacyProjectV2(input: {
   topologyWatermark?: TopologyWatermarkSettings | null;
 }): ProjectJsonV2 {
   const nodes: RenderNodeJson[] = [];
+  const template = getTemplateNodeBundle(input.templateId);
 
-  nodes.push({
-    id: 'template_backdrop',
-    type: 'legacy/template_layer',
-    props: { templateId: input.templateId, layer: 'backdrop' },
-  });
+  nodes.push(...template.backdropNodes);
 
   nodes.push({
     id: 'photo',
@@ -67,15 +51,11 @@ export function createLegacyProjectV2(input: {
       density: wm?.density ?? 12,
       noise: wm?.noise ?? 1.5,
       alpha: wm?.alpha ?? 0.45,
-      autoAnchor: getLegacyTopologyAutoAnchor(input.templateId),
+      autoAnchor: getTopologyAutoAnchor(input.templateId),
     },
   });
 
-  nodes.push({
-    id: 'template_overlay',
-    type: 'legacy/template_layer',
-    props: { templateId: input.templateId, layer: 'overlay' },
-  });
+  nodes.push(...template.overlayNodes);
 
   return {
     version: '2.0',

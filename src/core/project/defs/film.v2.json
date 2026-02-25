@@ -1,0 +1,103 @@
+{
+  "templateId": "film",
+  "backdropNodes": [],
+  "overlayNodes": [
+    {
+      "id": "tpl_overlay_film_frame",
+      "type": "core/rect",
+      "props": {
+        "zone": "canvas",
+        "style": {
+          "fill": "rgba(0,0,0,0)",
+          "stroke": "rgba(255,255,255,0.92)",
+          "strokeWidth": {
+            "designPx": 24,
+            "minPx": 14
+          }
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_film_strip_bg",
+      "type": "core/rect",
+      "props": {
+        "zone": "strip",
+        "style": {
+          "fill": "rgba(255,255,255,0.9)"
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_film_strip_lines",
+      "type": "core/text_stack",
+      "props": {
+        "zone": "strip",
+        "grid": {
+          "col": 1,
+          "colSpan": 12,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "direction": "vertical",
+        "gap": {
+          "designPx": 10,
+          "minPx": 6
+        },
+        "align": "left",
+        "vAlign": "top",
+        "items": [
+          {
+            "id": "camera",
+            "label": "相机",
+            "bind": {
+              "kind": "cameraName",
+              "fallback": "无 EXIF"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 650,
+              "size": {
+                "designPx": 30,
+                "minPx": 14
+              },
+              "color": "rgba(0,0,0,0.85)",
+              "align": "left",
+              "vAlign": "top"
+            }
+          },
+          {
+            "id": "secondary",
+            "label": "镜头/参数/日期",
+            "bind": {
+              "kind": "concat",
+              "parts": [
+                {
+                  "kind": "lensName"
+                },
+                {
+                  "kind": "settings"
+                },
+                {
+                  "kind": "dateTime"
+                }
+              ],
+              "joinWith": " · "
+            },
+            "style": {
+              "font": "sans",
+              "weight": 500,
+              "size": {
+                "designPx": 26,
+                "minPx": 12
+              },
+              "color": "rgba(0,0,0,0.85)",
+              "align": "left",
+              "vAlign": "top"
+            },
+            "hideWhenEmpty": true
+          }
+        ]
+      }
+    }
+  ]
+}

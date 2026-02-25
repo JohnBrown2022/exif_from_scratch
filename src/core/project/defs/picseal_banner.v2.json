@@ -1,0 +1,224 @@
+{
+  "templateId": "picseal_banner",
+  "backdropNodes": [],
+  "overlayNodes": [
+    {
+      "id": "tpl_overlay_picseal_banner_footer_bg",
+      "type": "core/rect",
+      "props": {
+        "zone": "footer",
+        "style": {
+          "fill": "rgba(255,255,255,0.98)"
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_picseal_banner_footer_topline",
+      "type": "core/divider",
+      "props": {
+        "zone": "footer",
+        "style": {
+          "color": "rgba(0,0,0,0.06)",
+          "thickness": 1
+        },
+        "orientation": "horizontal",
+        "position": "top"
+      }
+    },
+    {
+      "id": "tpl_overlay_picseal_banner_footer_split",
+      "type": "core/divider",
+      "props": {
+        "zone": "footer",
+        "style": {
+          "color": "rgba(0,0,0,0.12)",
+          "thickness": 2
+        },
+        "orientation": "vertical",
+        "position": "center"
+      }
+    },
+    {
+      "id": "tpl_overlay_picseal_banner_left_stack",
+      "type": "core/text_stack",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 1,
+          "colSpan": 6,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "direction": "vertical",
+        "gap": {
+          "designPx": 6,
+          "minPx": 4
+        },
+        "align": "left",
+        "vAlign": "top",
+        "items": [
+          {
+            "id": "camera",
+            "label": "相机",
+            "bind": {
+              "kind": "cameraName",
+              "fallback": "相机"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 800,
+              "size": {
+                "designPx": 18,
+                "minPx": 14
+              },
+              "color": "rgba(0,0,0,0.86)",
+              "align": "left",
+              "vAlign": "top"
+            }
+          },
+          {
+            "id": "date",
+            "label": "日期",
+            "bind": {
+              "kind": "dateTime"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 650,
+              "size": {
+                "designPx": 12,
+                "minPx": 10
+              },
+              "color": "rgba(0,0,0,0.42)",
+              "align": "left",
+              "vAlign": "top"
+            },
+            "hideWhenEmpty": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "tpl_overlay_picseal_banner_right_stack",
+      "type": "core/text_stack",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 7,
+          "colSpan": 4,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "direction": "vertical",
+        "gap": {
+          "designPx": 6,
+          "minPx": 4
+        },
+        "align": "left",
+        "vAlign": "top",
+        "items": [
+          {
+            "id": "lens",
+            "label": "镜头",
+            "bind": {
+              "kind": "lensName",
+              "fallback": "镜头"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 800,
+              "size": {
+                "designPx": 18,
+                "minPx": 14
+              },
+              "color": "rgba(0,0,0,0.86)",
+              "align": "left",
+              "vAlign": "top"
+            }
+          },
+          {
+            "id": "settings",
+            "label": "参数",
+            "bind": {
+              "kind": "settings",
+              "joinWith": " · ",
+              "fallback": "—"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 650,
+              "size": {
+                "designPx": 12,
+                "minPx": 10
+              },
+              "color": "rgba(0,0,0,0.42)",
+              "align": "left",
+              "vAlign": "top"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tpl_overlay_picseal_banner_maker_logo",
+      "type": "core/maker_logo",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 11,
+          "colSpan": 2,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "style": {
+          "style": "color",
+          "opacity": 0.92,
+          "align": "right",
+          "vAlign": "middle",
+          "maxWidth": {
+            "designPx": 200,
+            "minPx": 120
+          },
+          "maxHeight": {
+            "designPx": 56,
+            "minPx": 30
+          }
+        },
+        "condition": {
+          "showWhenMakerLogoPresent": true
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_picseal_banner_maker_text",
+      "type": "core/text",
+      "props": {
+        "zone": "footer",
+        "grid": {
+          "col": 11,
+          "colSpan": 2,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "style": {
+          "font": "sans",
+          "weight": 900,
+          "size": {
+            "designPx": 22,
+            "minPx": 18
+          },
+          "color": "rgba(0,0,0,0.52)",
+          "align": "right",
+          "vAlign": "middle"
+        },
+        "bind": {
+          "kind": "makeUpper",
+          "fallback": "EXIF"
+        },
+        "condition": {
+          "showWhenMakerLogoMissing": true
+        }
+      }
+    }
+  ]
+}

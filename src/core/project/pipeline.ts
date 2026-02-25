@@ -4,11 +4,14 @@ import { clamp } from '../utils/clamp';
 import { roundRectPath } from '../render/draw';
 import type { TemplateId, WatermarkTemplate } from '../render/templates';
 import { getTemplateById } from '../render/templates';
+import { getBuiltinTemplateJson } from '../render/engine/builtins';
+import { computeLayout } from '../render/engine/layout';
+import { computeTemplateZones } from '../render/engine/zones';
 
 import { resolveNodeRect, type LayoutEnv } from './layout';
 import { ensureBuiltinNodeTypesRegistered } from './init';
 import { getNodeType } from './registry';
-import type { CanvasBackground, CompiledNode, CompiledProject, ProjectJsonV2, Rect, RenderEnv, RenderEnvInput } from './types';
+import type { CanvasBackground, CompiledNode, CompiledProject, ProjectJsonV2, Rect, RenderEnv, RenderEnvInput, TemplateEnv } from './types';
 
 function rect(x: number, y: number, width: number, height: number): Rect {
   return { x, y, width, height };
@@ -194,6 +197,7 @@ export function compileProject(request: Omit<RenderProjectRequest, 'canvas'>): {
   let imageDrawMode: 'contain' | 'cover' = 'contain';
   let cornerRadius: number | undefined = undefined;
   let template: WatermarkTemplate | null = null;
+  let templateEnv: TemplateEnv | undefined = undefined;
 
   if (request.project.canvas.mode === 'fixed_size') {
     canvasWidth = Math.max(1, Math.round(request.project.canvas.width));
@@ -203,12 +207,30 @@ export function compileProject(request: Omit<RenderProjectRequest, 'canvas'>): {
   } else if (request.project.canvas.mode === 'template') {
     const templateId = request.project.canvas.templateId as TemplateId;
     template = getTemplateById(templateId);
-    const layout = template.getLayout ? template.getLayout({ baseWidth: request.baseWidth, baseHeight: request.baseHeight }) : defaultLayout(request.baseWidth, request.baseHeight);
-    canvasWidth = Math.max(1, Math.round(layout.canvasWidth));
-    canvasHeight = Math.max(1, Math.round(layout.canvasHeight));
-    imageRect = layout.imageRect;
-    imageDrawMode = layout.imageDrawMode ?? 'contain';
-    cornerRadius = layout.imageCornerRadius;
+    const templateJson = getBuiltinTemplateJson(templateId);
+    if (templateJson) {
+      const computed = computeLayout(templateJson.layout, templateJson.scaleModel, request.baseWidth, request.baseHeight);
+      canvasWidth = Math.max(1, Math.round(computed.canvasWidth));
+      canvasHeight = Math.max(1, Math.round(computed.canvasHeight));
+      imageRect = computed.photoRect;
+      imageDrawMode = computed.photoDrawMode;
+      cornerRadius = computed.photoCornerRadius;
+      templateEnv = {
+        id: templateId,
+        json: templateJson,
+        scale: computed.scale,
+        zones: computeTemplateZones(templateJson, computed.zones, computed.scale),
+      };
+    } else {
+      const layout = template.getLayout
+        ? template.getLayout({ baseWidth: request.baseWidth, baseHeight: request.baseHeight })
+        : defaultLayout(request.baseWidth, request.baseHeight);
+      canvasWidth = Math.max(1, Math.round(layout.canvasWidth));
+      canvasHeight = Math.max(1, Math.round(layout.canvasHeight));
+      imageRect = layout.imageRect;
+      imageDrawMode = layout.imageDrawMode ?? 'contain';
+      cornerRadius = layout.imageCornerRadius;
+    }
   }
 
   const photoRect = imageDrawMode === 'contain'
@@ -222,9 +244,10 @@ export function compileProject(request: Omit<RenderProjectRequest, 'canvas'>): {
     photoRect,
     imageDrawMode,
     photoCornerRadius: cornerRadius,
+    ...(templateEnv ? { template: templateEnv } : null),
   };
 
-  const layoutEnv: LayoutEnv = { canvas: env.canvas, photoRect: env.photoRect };
+  const layoutEnv: LayoutEnv = { canvas: env.canvas, imageRect: env.imageRect, photoRect: env.photoRect };
 
   const compiledNodes: CompiledNode[] = [];
   for (const node of request.project.nodes) {
@@ -302,6 +325,11 @@ export function renderProject(request: RenderProjectRequest) {
 
   // Render nodes in order
   const env: RenderEnv = { ...baseEnv };
+  const hasMakerLogoNode = compiled.nodes.some((node) => node.type === 'core/maker_logo');
+  const hasEnabledMakerLogoNode = compiled.nodes.some((node) => node.type === 'core/maker_logo' && node.enabled);
+  if (hasMakerLogoNode && !hasEnabledMakerLogoNode) {
+    env.makerLogo = null;
+  }
 
   for (const node of compiled.nodes) {
     if (!node.enabled) continue;

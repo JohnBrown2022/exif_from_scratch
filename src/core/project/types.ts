@@ -1,6 +1,8 @@
 import type { ExifData } from '../exif/types';
 import type { CanvasRotation } from '../exif/readRotation';
 import type { MakerLogo } from '../brand/makerLogo';
+import type { TemplateId } from '../render/templates';
+import type { TemplateJson } from '../render/engine/types';
 
 export type ProjectVersion = '2.0';
 
@@ -20,7 +22,7 @@ export type Anchor =
 export type NodeLayout =
   | {
       kind: 'rect';
-      relativeTo?: 'canvas' | 'photo';
+      relativeTo?: 'canvas' | 'image' | 'photo';
       x: Length;
       y: Length;
       width: Length;
@@ -28,7 +30,7 @@ export type NodeLayout =
     }
   | {
       kind: 'anchor';
-      relativeTo?: 'canvas' | 'photo';
+      relativeTo?: 'canvas' | 'image' | 'photo';
       anchor: Anchor;
       offsetX: Length;
       offsetY: Length;
@@ -89,12 +91,20 @@ export type RenderEnvInput = {
   };
 };
 
+export type TemplateEnv = {
+  id: TemplateId;
+  json: TemplateJson;
+  scale: number;
+  zones: Record<string, Rect>;
+};
+
 export type RenderEnv = RenderEnvInput & {
   imageRect: Rect;
   photoRect: Rect;
   imageDrawMode: 'contain' | 'cover';
   photoCornerRadius?: number;
   palette?: string[];
+  template?: TemplateEnv;
 };
 
 export type CompiledNode = {
