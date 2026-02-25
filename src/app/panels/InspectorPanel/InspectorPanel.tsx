@@ -6,9 +6,10 @@ import type { BatchUpdate, ExifData, ExportFormat, JpegBackgroundMode, TemplateI
 import type { PresetPayload } from '../../hooks/usePresetSlots';
 
 import { ExportTab } from './ExportTab';
+import { LayersTab } from './LayersTab';
 import { StyleTab } from './StyleTab';
 
-type TabId = 'style' | 'export';
+type TabId = 'style' | 'layers' | 'export';
 
 type Props = {
   templateId: TemplateId;
@@ -66,6 +67,7 @@ export default function InspectorPanel(props: Props) {
   const items = useMemo<TabItem<TabId>[]>(
     () => [
       { id: 'style', label: '样式' },
+      { id: 'layers', label: '图层' },
       { id: 'export', label: '导出', badge: batchBadge },
     ],
     [batchBadge],
@@ -99,6 +101,20 @@ export default function InspectorPanel(props: Props) {
               onJpegBackgroundModeChange={props.onJpegBackgroundModeChange}
               blurRadius={props.blurRadius}
               onBlurRadiusChange={props.onBlurRadiusChange}
+              topologyWatermarkSettings={props.topologyWatermarkSettings}
+              onTopologyWatermarkSettingsChange={props.onTopologyWatermarkSettingsChange}
+              topologyMd5={props.topologyMd5}
+              topologyMd5Error={props.topologyMd5Error}
+              isComputingTopologyMd5={props.isComputingTopologyMd5}
+            />
+          </div>
+        ) : null}
+
+        {tab === 'layers' ? (
+          <div role="tabpanel" id="panel-inspector-layers" aria-labelledby="tab-inspector-layers">
+            <LayersTab
+              templateId={props.templateId}
+              hasSelection={props.hasSelection}
               topologyWatermarkSettings={props.topologyWatermarkSettings}
               onTopologyWatermarkSettingsChange={props.onTopologyWatermarkSettingsChange}
               topologyMd5={props.topologyMd5}

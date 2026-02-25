@@ -23,3 +23,6 @@ export * from './export/download';
 
 export * from './batch/types';
 export * from './batch/runBatchExport';
+
+export * from './project/registry';
+export * from './project/init';
