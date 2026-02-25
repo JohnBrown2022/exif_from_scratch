@@ -1,4 +1,4 @@
-import type { CompiledNode, RenderEnv } from './types';
+import type { CompiledNode, Rect, RenderEnv, RenderNodeJson } from './types';
 
 export type SettingsField =
   | { kind: 'slider'; key: string; label: string; min: number; max: number; step: number; default: number }
@@ -12,6 +12,7 @@ export type NodeTypeDef = {
   fields?: SettingsField[];
   defaultProps?: Record<string, unknown>;
   sanitizeProps?: (raw: unknown) => Record<string, unknown>;
+  resolveRect?: (input: { node: RenderNodeJson; props: Record<string, unknown>; env: RenderEnv }) => Rect | null;
   render: (ctx: CanvasRenderingContext2D, node: CompiledNode, env: RenderEnv) => void | Promise<void>;
   requirements?: {
     palette?: boolean;
@@ -32,4 +33,3 @@ export function getNodeType(type: string): NodeTypeDef | null {
 export function listNodeTypes(): NodeTypeDef[] {
   return Array.from(nodeRegistry.values());
 }
-

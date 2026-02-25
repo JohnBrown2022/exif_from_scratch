@@ -136,6 +136,7 @@ const coreImage: NodeTypeDef = {
   type: 'core/image',
   meta: { name: '照片', description: '原始照片层。' },
   sanitizeProps: sanitizeImageNodeProps,
+  resolveRect: ({ env }) => env.imageRect,
   render: (ctx2d, node, env) => {
     const props = node.props as unknown as ImageNodeProps;
     const fit = props.fit ?? env.imageDrawMode;
@@ -175,6 +176,41 @@ function sanitizeTopologyProps(raw: unknown): TopologyNodeProps | null {
   return { seed, positionMode, x, y, size, autoAnchor, alpha, density, noise };
 }
 
+function computeTopologyRect(env: RenderEnv, input: TopologyNodeProps): { x: number; y: number; width: number; height: number } {
+  const shortEdge = Math.max(1, Math.min(env.photoRect.width, env.photoRect.height));
+  const rawSizePx = shortEdge * clamp(input.size, 0, 1);
+  const stampSize = Math.max(1, Math.round(clamp(rawSizePx, Math.min(24, shortEdge), shortEdge)));
+  const half = stampSize / 2;
+
+  const minX = env.photoRect.x + half;
+  const maxX = env.photoRect.x + env.photoRect.width - half;
+  const minY = env.photoRect.y + half;
+  const maxY = env.photoRect.y + env.photoRect.height - half;
+
+  let cx = env.photoRect.x + env.photoRect.width / 2;
+  let cy = env.photoRect.y + env.photoRect.height / 2;
+
+  if (input.positionMode === 'manual') {
+    const rx = clamp(input.x, 0, 1);
+    const ry = clamp(input.y, 0, 1);
+    cx = env.photoRect.x + rx * env.photoRect.width;
+    cy = env.photoRect.y + ry * env.photoRect.height;
+  } else {
+    const anchor = input.autoAnchor ?? 'bottom-right';
+    const margin = Math.max(8, stampSize * 0.12);
+    const right = env.photoRect.x + env.photoRect.width - margin - half;
+    const top = env.photoRect.y + margin + half;
+    const bottom = env.photoRect.y + env.photoRect.height - margin - half;
+    cx = right;
+    cy = anchor === 'top-right' ? top : bottom;
+  }
+
+  if (minX <= maxX) cx = clamp(cx, minX, maxX);
+  if (minY <= maxY) cy = clamp(cy, minY, maxY);
+
+  return { x: Math.round(cx - half), y: Math.round(cy - half), width: stampSize, height: stampSize };
+}
+
 const topologyMountain: NodeTypeDef = {
   type: 'plugin/topology_mountain',
   meta: { name: '山水徽', description: '生成式艺术印章（拓扑山水）。' },
@@ -190,6 +226,7 @@ const topologyMountain: NodeTypeDef = {
       density: 12,
       noise: 1.5,
     },
+  resolveRect: ({ env, props }) => computeTopologyRect(env, props as TopologyNodeProps),
   render: (ctx2d, node: CompiledNode) => {
     const props = node.props as unknown as TopologyNodeProps;
     const sizePx = Math.max(1, Math.round(Math.min(node.rect.width, node.rect.height)));

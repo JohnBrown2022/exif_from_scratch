@@ -182,41 +182,6 @@ function clipToPhoto(ctx: CanvasRenderingContext2D, env: RenderEnv) {
   }
 }
 
-function computeTopologyRect(env: RenderEnv, input: { size: number; positionMode: 'auto' | 'manual'; x: number; y: number; autoAnchor?: 'top-right' | 'bottom-right' }): Rect {
-  const shortEdge = Math.max(1, Math.min(env.photoRect.width, env.photoRect.height));
-  const rawSizePx = shortEdge * clamp(input.size, 0, 1);
-  const stampSize = Math.max(1, Math.round(clamp(rawSizePx, Math.min(24, shortEdge), shortEdge)));
-  const half = stampSize / 2;
-
-  const minX = env.photoRect.x + half;
-  const maxX = env.photoRect.x + env.photoRect.width - half;
-  const minY = env.photoRect.y + half;
-  const maxY = env.photoRect.y + env.photoRect.height - half;
-
-  let cx = env.photoRect.x + env.photoRect.width / 2;
-  let cy = env.photoRect.y + env.photoRect.height / 2;
-
-  if (input.positionMode === 'manual') {
-    const rx = clamp(input.x, 0, 1);
-    const ry = clamp(input.y, 0, 1);
-    cx = env.photoRect.x + rx * env.photoRect.width;
-    cy = env.photoRect.y + ry * env.photoRect.height;
-  } else {
-    const anchor = input.autoAnchor ?? 'bottom-right';
-    const margin = Math.max(8, stampSize * 0.12);
-    const right = env.photoRect.x + env.photoRect.width - margin - half;
-    const top = env.photoRect.y + margin + half;
-    const bottom = env.photoRect.y + env.photoRect.height - margin - half;
-    cx = right;
-    cy = anchor === 'top-right' ? top : bottom;
-  }
-
-  if (minX <= maxX) cx = clamp(cx, minX, maxX);
-  if (minY <= maxY) cy = clamp(cy, minY, maxY);
-
-  return rect(Math.round(cx - half), Math.round(cy - half), stampSize, stampSize);
-}
-
 export type RenderProjectRequest = {
   canvas: HTMLCanvasElement;
   project: ProjectJsonV2;
@@ -278,22 +243,8 @@ export function compileProject(request: Omit<RenderProjectRequest, 'canvas'>): {
     const props = def.sanitizeProps ? def.sanitizeProps(node.props) : (isPlainRecord(node.props) ? node.props : {});
 
     let rectBox = resolveNodeRect(node.layout, layoutEnv);
-
-    // Special: core image defaults to the template-computed imageRect if no layout is provided.
-    if (node.type === 'core/image' && !node.layout) {
-      rectBox = env.imageRect;
-    }
-
-    // Special: topology stamp rect depends on env + size + positionMode
-    if (node.type === 'plugin/topology_mountain') {
-      const positionMode = (props as Record<string, unknown>).positionMode === 'manual' ? 'manual' : 'auto';
-      rectBox = computeTopologyRect(env, {
-        size: typeof (props as Record<string, unknown>).size === 'number' ? ((props as Record<string, unknown>).size as number) : 0.18,
-        positionMode,
-        x: typeof (props as Record<string, unknown>).x === 'number' ? ((props as Record<string, unknown>).x as number) : 0.85,
-        y: typeof (props as Record<string, unknown>).y === 'number' ? ((props as Record<string, unknown>).y as number) : 0.85,
-        autoAnchor: (props as Record<string, unknown>).autoAnchor === 'top-right' ? 'top-right' : (props as Record<string, unknown>).autoAnchor === 'bottom-right' ? 'bottom-right' : undefined,
-      });
+    if (!node.layout && def.resolveRect) {
+      rectBox = def.resolveRect({ node, props, env }) ?? rectBox;
     }
 
     compiledNodes.push({
