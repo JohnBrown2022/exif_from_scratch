@@ -123,8 +123,6 @@ export default function App() {
 
   const updateTopologyWatermarkSettings = (patch: Partial<TopologyWatermarkSettings>) => {
     setProject((prev) => {
-      const base = DEFAULT_TOPOLOGY_WATERMARK_SETTINGS;
-      const nextSettings: TopologyWatermarkSettings = { ...topologyWatermarkSettings, ...patch };
       const nodes = Array.isArray(prev.nodes) ? prev.nodes : [];
       const template = prev.canvas.mode === 'template' ? (prev.canvas.templateId as TemplateId) : 'bottom_bar';
       const autoAnchor =
@@ -139,20 +137,14 @@ export default function App() {
 
       const nextNodes = nodes.map((node) => {
         if (node.id !== 'topology_mountain' || node.type !== 'plugin/topology_mountain') return node;
+        const { enabled, ...propPatch } = patch;
+        const nextEnabled = typeof enabled === 'boolean' ? enabled : node.enabled;
         return {
           ...node,
-          enabled: Boolean(nextSettings.enabled),
+          ...(typeof enabled === 'boolean' ? { enabled: nextEnabled } : null),
           props: {
-            ...node.props,
-            seedMode: nextSettings.seedMode ?? base.seedMode,
-            manualSeed: nextSettings.manualSeed ?? base.manualSeed,
-            positionMode: nextSettings.positionMode ?? base.positionMode,
-            x: nextSettings.x ?? base.x,
-            y: nextSettings.y ?? base.y,
-            size: nextSettings.size ?? base.size,
-            density: nextSettings.density ?? base.density,
-            noise: nextSettings.noise ?? base.noise,
-            alpha: nextSettings.alpha ?? base.alpha,
+            ...(typeof node.props === 'object' && node.props ? node.props : {}),
+            ...propPatch,
             autoAnchor,
           },
         };
