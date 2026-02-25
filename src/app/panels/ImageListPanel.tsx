@@ -21,6 +21,7 @@ type Props = {
   importProgress: ImportProgress;
   selectedIndex: number;
   onSelect: (index: number) => void;
+  onRequestVisibleThumbnails: (start: number, end: number) => void;
   onImport: () => void;
   onRemoveSelected: () => void;
   onClearAll: () => void;
@@ -42,6 +43,7 @@ type ImageListItemProps = {
 
 const LIST_ITEM_HEIGHT = 54;
 const LIST_OVERSCAN = 4;
+const PRELOAD_OVERSCAN = 12;
 const FALLBACK_VISIBLE_ROWS = 12;
 
 const ImageListItem = memo(function ImageListItem({
@@ -78,6 +80,7 @@ export default function ImageListPanel({
   images,
   importProgress,
   selectedIndex,
+  onRequestVisibleThumbnails,
   onSelect,
   onImport,
   onRemoveSelected,
@@ -141,12 +144,23 @@ export default function ImageListPanel({
 
   const totalHeight = images.length * LIST_ITEM_HEIGHT;
   const effectiveHeight = viewportHeight > 0 ? viewportHeight : LIST_ITEM_HEIGHT * FALLBACK_VISIBLE_ROWS;
-  const start = Math.max(0, Math.floor(scrollTop / LIST_ITEM_HEIGHT) - LIST_OVERSCAN);
+  const visibleStart = Math.max(0, Math.floor(scrollTop / LIST_ITEM_HEIGHT));
+  const visibleEnd = Math.min(
+    images.length,
+    Math.ceil((scrollTop + effectiveHeight) / LIST_ITEM_HEIGHT),
+  );
+  const start = Math.max(0, visibleStart - LIST_OVERSCAN);
   const end = Math.min(
     images.length,
-    Math.ceil((scrollTop + effectiveHeight) / LIST_ITEM_HEIGHT) + LIST_OVERSCAN,
+    visibleEnd + LIST_OVERSCAN,
   );
+  const preloadStart = Math.max(0, visibleStart - PRELOAD_OVERSCAN);
+  const preloadEnd = Math.min(images.length, visibleEnd + PRELOAD_OVERSCAN);
   const visibleImages = images.slice(start, end);
+
+  useEffect(() => {
+    onRequestVisibleThumbnails(preloadStart, preloadEnd);
+  }, [onRequestVisibleThumbnails, preloadStart, preloadEnd]);
 
   return (
     <div

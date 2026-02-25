@@ -54,12 +54,20 @@ export function useImages() {
     totalBatches: 0,
   });
   const imagesRef = useRef<ImageItem[]>([]);
+  const imagesByIdRef = useRef<Map<string, ImageItem>>(new Map());
   const isMountedRef = useRef(true);
   const thumbnailPendingRef = useRef(new Set<string>());
+  const thumbnailQueuedRef = useRef(new Set<string>());
+  const highPriorityThumbnailQueueRef = useRef<string[]>([]);
+  const normalPriorityThumbnailQueueRef = useRef<string[]>([]);
   const importVersionRef = useRef(0);
+  const isThumbnailWorkerRunningRef = useRef(false);
 
   useEffect(() => {
     imagesRef.current = images;
+    const byId = new Map<string, ImageItem>();
+    for (const image of images) byId.set(image.id, image);
+    imagesByIdRef.current = byId;
   }, [images]);
 
   useEffect(() => {
@@ -113,13 +121,28 @@ export function useImages() {
     });
   }, []);
 
-  const generateThumbnails = useCallback(
-    async (items: ImageItem[]) => {
-      for (let i = 0; i < items.length; i += THUMBNAIL_BATCH_SIZE) {
-        const chunk = items.slice(i, i + THUMBNAIL_BATCH_SIZE);
+  const drainThumbnailQueue = useCallback(async () => {
+    if (isThumbnailWorkerRunningRef.current) return;
+    isThumbnailWorkerRunningRef.current = true;
+
+    try {
+      while (highPriorityThumbnailQueueRef.current.length > 0 || normalPriorityThumbnailQueueRef.current.length > 0) {
+        const highChunk = highPriorityThumbnailQueueRef.current.splice(0, THUMBNAIL_BATCH_SIZE);
+        const lowRemain = Math.max(0, THUMBNAIL_BATCH_SIZE - highChunk.length);
+        const lowChunk = normalPriorityThumbnailQueueRef.current.splice(0, lowRemain);
+        const batchIds = [...highChunk, ...lowChunk];
+
+        batchIds.forEach((id) => {
+          if (thumbnailQueuedRef.current.has(id)) return;
+          thumbnailQueuedRef.current.add(id);
+        });
+
+        const batchItems = batchIds
+          .map((id) => imagesByIdRef.current.get(id))
+          .filter((item): item is ImageItem => Boolean(item));
 
         await Promise.all(
-          chunk.map(async (image) => {
+          batchItems.map(async (image) => {
             if (thumbnailPendingRef.current.has(image.id)) return;
             thumbnailPendingRef.current.add(image.id);
             let thumbnailUrl: string | null = null;
@@ -130,6 +153,7 @@ export function useImages() {
               thumbnailUrl = null;
             } finally {
               thumbnailPendingRef.current.delete(image.id);
+              thumbnailQueuedRef.current.delete(image.id);
             }
 
             if (!isMountedRef.current) {
@@ -137,14 +161,85 @@ export function useImages() {
               return;
             }
 
-            if (thumbnailUrl) updateImageThumbnail(image.id, thumbnailUrl);
+            if (!thumbnailUrl) return;
+            const latest = imagesByIdRef.current.get(image.id);
+            if (latest?.thumbnailUrl) {
+              URL.revokeObjectURL(thumbnailUrl);
+              return;
+            }
+            updateImageThumbnail(image.id, thumbnailUrl);
           }),
         );
 
+        batchIds.forEach((id) => {
+          const isStillQueued = highPriorityThumbnailQueueRef.current.includes(id) || normalPriorityThumbnailQueueRef.current.includes(id);
+          if (!isStillQueued) {
+            thumbnailQueuedRef.current.delete(id);
+          }
+        });
+
         await waitNextFrame();
       }
+    } finally {
+      isThumbnailWorkerRunningRef.current = false;
+    }
+  }, [updateImageThumbnail]);
+
+  const enqueueThumbnails = useCallback((ids: string[], highPriority: boolean) => {
+    if (ids.length === 0) return;
+    const target = highPriority ? highPriorityThumbnailQueueRef.current : normalPriorityThumbnailQueueRef.current;
+    const other = highPriority ? normalPriorityThumbnailQueueRef.current : highPriorityThumbnailQueueRef.current;
+    const toAppend: string[] = [];
+    const toPrepend: string[] = [];
+
+    for (const id of ids) {
+      const image = imagesByIdRef.current.get(id);
+      if (!image || image.thumbnailUrl) continue;
+
+      if (thumbnailQueuedRef.current.has(id) || thumbnailPendingRef.current.has(id)) {
+        if (highPriority) {
+          const idx = other.indexOf(id);
+          if (idx >= 0) {
+            other.splice(idx, 1);
+            toPrepend.push(id);
+          }
+        }
+        continue;
+      }
+
+      if (highPriority) {
+        toPrepend.push(id);
+      } else {
+        toAppend.push(id);
+      }
+    }
+
+    if (toPrepend.length > 0) {
+      for (let i = toPrepend.length - 1; i >= 0; i -= 1) {
+        target.unshift(toPrepend[i]);
+      }
+    }
+    if (toAppend.length > 0) {
+      target.push(...toAppend);
+    }
+
+    if (toPrepend.length > 0 || toAppend.length > 0) {
+      void drainThumbnailQueue();
+    }
+  }, [drainThumbnailQueue]);
+
+  const requestVisibleThumbnails = useCallback(
+    (start: number, end: number) => {
+      const total = imagesRef.current.length;
+      if (total === 0) return;
+      const safeStart = Math.max(0, Math.min(total, start));
+      const safeEnd = Math.max(safeStart, Math.min(total, end));
+      if (safeStart >= safeEnd) return;
+
+      const ids = imagesRef.current.slice(safeStart, safeEnd).map((image) => image.id);
+      enqueueThumbnails(ids, true);
     },
-    [updateImageThumbnail],
+    [enqueueThumbnails],
   );
 
   function addFiles(nextFiles: FileList | File[]) {
@@ -188,7 +283,7 @@ export function useImages() {
       }
 
       setImages((prev) => [...prev, ...imageItems]);
-      void generateThumbnails(imageItems);
+      void enqueueThumbnails(imageItems.map((image) => image.id), false);
       setImportProgress({
         isImporting: true,
         total: next.length,
@@ -237,6 +332,10 @@ export function useImages() {
 
   function clearAll() {
     importVersionRef.current++;
+    thumbnailQueuedRef.current.clear();
+    highPriorityThumbnailQueueRef.current.length = 0;
+    normalPriorityThumbnailQueueRef.current.length = 0;
+    thumbnailPendingRef.current.clear();
     for (const image of imagesRef.current) revokeImage(image);
     setImportProgress({
       isImporting: false,
@@ -257,6 +356,7 @@ export function useImages() {
     setSelectedIndex,
     selected,
     importProgress,
+    requestVisibleThumbnails,
     addFiles,
     removeSelected,
     clearAll,

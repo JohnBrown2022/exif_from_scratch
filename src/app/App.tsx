@@ -24,8 +24,17 @@ import { useTopologyWatermarkSettings } from './hooks/useTopologyWatermarkSettin
 export default function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const { images, selectedIndex, setSelectedIndex, selected, importProgress, addFiles, removeSelected, clearAll } =
-    useImages();
+  const {
+    images,
+    selectedIndex,
+    setSelectedIndex,
+    selected,
+    importProgress,
+    requestVisibleThumbnails,
+    addFiles,
+    removeSelected,
+    clearAll,
+  } = useImages();
   const selectedFile = selected?.file ?? null;
   const selectedFileKey = useMemo(
     () => (selectedFile ? `${selectedFile.name}:${selectedFile.size}:${selectedFile.lastModified}` : null),
@@ -326,6 +335,7 @@ export default function App() {
             selectedIndex={selectedIndex}
             importProgress={importProgress}
             onSelect={setSelectedIndex}
+            onRequestVisibleThumbnails={requestVisibleThumbnails}
             onImport={openFilePicker}
             onRemoveSelected={removeSelected}
             onClearAll={clearAll}
