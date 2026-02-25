@@ -1,24 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ui from './Panels.module.css';
 import {
+  renderProject,
   decodeImage,
-  getTemplateById,
   inferMakerLogoKey,
   loadMakerLogo,
   readRotation,
-  renderWatermark,
+  type CanvasBackground,
   type CanvasRotation,
   type DecodedImage,
   type ExifData,
   type ExportFormat,
   type JpegBackgroundMode,
-  type TemplateId,
-  type TopologyWatermarkSettings,
+  type ProjectJsonV2,
 } from '../../core';
 
 type Props = {
   file: File | null;
-  templateId: TemplateId;
+  project: ProjectJsonV2;
   renderRevision: number;
   exif: ExifData | null;
   exifError: string | null;
@@ -27,7 +26,6 @@ type Props = {
   jpegBackgroundMode: JpegBackgroundMode;
   blurRadius: number;
   exportFormat: ExportFormat;
-  topologyWatermarkSettings: TopologyWatermarkSettings;
   seeds: {
     fileMd5: string | null;
     fallback: string;
@@ -55,7 +53,7 @@ type LoadedImage = {
 
 export default function PreviewPanel({
   file,
-  templateId,
+  project,
   renderRevision,
   exif,
   exifError,
@@ -64,7 +62,6 @@ export default function PreviewPanel({
   jpegBackgroundMode,
   blurRadius,
   exportFormat,
-  topologyWatermarkSettings,
   seeds,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -177,24 +174,33 @@ export default function PreviewPanel({
 
     try {
       const previewSize = getPreviewSize(loaded.orientedWidth, loaded.orientedHeight, 1200);
-      const template = getTemplateById(templateId);
 
-      renderWatermark({
+      const background: CanvasBackground =
+        exportFormat === 'jpeg'
+          ? jpegBackgroundMode === 'blur'
+            ? { mode: 'blur', blurRadius, darken: 0.15 }
+            : { mode: 'color', color: jpegBackground }
+          : { mode: 'none' };
+
+      const projectToRender: ProjectJsonV2 = { ...project, canvas: { ...project.canvas, background } };
+
+      renderProject({
         canvas,
-        image: loaded.decoded.source,
-        imageWidth: loaded.decoded.width,
-        imageHeight: loaded.decoded.height,
-        outputWidth: previewSize.width,
-        outputHeight: previewSize.height,
-        exif: exif ?? {},
-        template,
-        background: exportFormat === 'jpeg' ? jpegBackground : undefined,
-        backgroundMode: exportFormat === 'jpeg' ? jpegBackgroundMode : undefined,
-        blurRadius: exportFormat === 'jpeg' ? blurRadius : undefined,
-        rotation: loaded.rotation,
-        makerLogo,
-        topologyWatermark: topologyWatermarkSettings,
-        seeds,
+        project: projectToRender,
+        env: {
+          canvas: { width: previewSize.width, height: previewSize.height },
+          image: {
+            source: loaded.decoded.source,
+            width: loaded.decoded.width,
+            height: loaded.decoded.height,
+            rotation: loaded.rotation,
+          },
+          exif: exif ?? {},
+          makerLogo,
+          seeds,
+        },
+        baseWidth: previewSize.width,
+        baseHeight: previewSize.height,
       });
     } catch (err) {
       if (!cancelled) setRenderError(err instanceof Error ? err.message : '预览渲染失败');
@@ -216,8 +222,7 @@ export default function PreviewPanel({
     loaded,
     makerLogo,
     renderRevision,
-    templateId,
-    topologyWatermarkSettings,
+    project,
     seeds,
   ]);
 

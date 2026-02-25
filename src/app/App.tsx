@@ -7,7 +7,16 @@ import { useExportController } from './hooks/useExportController';
 import { useImages } from './hooks/useImages';
 import { useSelectedExif } from './hooks/useSelectedExif';
 import type { PresetPayload } from './hooks/usePresetSlots';
-import { fingerprintMd5Hex, type ExportFormat, type JpegBackgroundMode, type TemplateId, type TopologyWatermarkSettings } from '../core';
+import {
+  DEFAULT_TOPOLOGY_WATERMARK_SETTINGS,
+  createLegacyProjectV2,
+  fingerprintMd5Hex,
+  type ExportFormat,
+  type JpegBackgroundMode,
+  type ProjectJsonV2,
+  type TemplateId,
+  type TopologyWatermarkSettings,
+} from '../core';
 import { loadTemplateOverride, saveTemplateOverride } from '../core/render/engine/overrides';
 import { useTopologyWatermarkSettings } from './hooks/useTopologyWatermarkSettings';
 
@@ -21,7 +30,6 @@ export default function App() {
     [selectedFile],
   );
 
-  const [templateId, setTemplateId] = useState<TemplateId>('bottom_bar');
   const [templateRenderRevision, setTemplateRenderRevision] = useState(0);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('jpeg');
   const [jpegQuality, setJpegQuality] = useState<number>(0.92);
@@ -75,10 +83,129 @@ export default function App() {
     };
   }, []);
 
-  const { settings: topologyWatermarkSettings, setSettings: setTopologyWatermarkSettings } = useTopologyWatermarkSettings();
+  const { settings: persistedTopologyWatermarkSettings, setSettings: setPersistedTopologyWatermarkSettings } =
+    useTopologyWatermarkSettings();
+
+  const [project, setProject] = useState<ProjectJsonV2>(() =>
+    createLegacyProjectV2({
+      templateId: 'bottom_bar',
+      topologyWatermark: persistedTopologyWatermarkSettings,
+    }),
+  );
+
+  const templateId = useMemo(() => (project.canvas.mode === 'template' ? (project.canvas.templateId as TemplateId) : 'bottom_bar'), [project.canvas]);
+
+  const topologyWatermarkSettings = useMemo<TopologyWatermarkSettings>(() => {
+    if (!Array.isArray(project.nodes)) return DEFAULT_TOPOLOGY_WATERMARK_SETTINGS;
+    const base = DEFAULT_TOPOLOGY_WATERMARK_SETTINGS;
+    const node = project.nodes.find((n) => n.id === 'topology_mountain' && n.type === 'plugin/topology_mountain');
+    const props = node && typeof node.props === 'object' && node.props ? (node.props as Record<string, unknown>) : {};
+    const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+    const asFiniteNumber = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : undefined);
+    const asEnum = <T extends string>(value: unknown, allowed: readonly T[]): T | undefined => {
+      if (typeof value !== 'string') return undefined;
+      return (allowed as readonly string[]).includes(value) ? (value as T) : undefined;
+    };
+
+    return {
+      enabled: node?.enabled === true,
+      seedMode: asEnum(props.seedMode, ['file_md5', 'manual'] as const) ?? base.seedMode,
+      manualSeed: typeof props.manualSeed === 'string' ? props.manualSeed : base.manualSeed,
+      positionMode: asEnum(props.positionMode, ['auto', 'manual'] as const) ?? base.positionMode,
+      x: clamp(asFiniteNumber(props.x) ?? base.x, 0, 1),
+      y: clamp(asFiniteNumber(props.y) ?? base.y, 0, 1),
+      size: clamp(asFiniteNumber(props.size) ?? base.size, 0, 1),
+      density: clamp(Math.round(asFiniteNumber(props.density) ?? base.density), 4, 24),
+      noise: clamp(asFiniteNumber(props.noise) ?? base.noise, 0, 3),
+      alpha: clamp(asFiniteNumber(props.alpha) ?? base.alpha, 0, 1),
+    };
+  }, [project.nodes]);
+
   const updateTopologyWatermarkSettings = (patch: Partial<TopologyWatermarkSettings>) => {
-    setTopologyWatermarkSettings((prev) => ({ ...prev, ...patch }));
+    setProject((prev) => {
+      const base = DEFAULT_TOPOLOGY_WATERMARK_SETTINGS;
+      const nextSettings: TopologyWatermarkSettings = { ...topologyWatermarkSettings, ...patch };
+      const nodes = Array.isArray(prev.nodes) ? prev.nodes : [];
+      const template = prev.canvas.mode === 'template' ? (prev.canvas.templateId as TemplateId) : 'bottom_bar';
+      const autoAnchor =
+        template === 'bottom_bar' ||
+        template === 'monitor_bar' ||
+        template === 'shot_on' ||
+        template === 'film' ||
+        template === 'lightroom_footer' ||
+        template === 'minimal_corner'
+          ? 'top-right'
+          : 'bottom-right';
+
+      const nextNodes = nodes.map((node) => {
+        if (node.id !== 'topology_mountain' || node.type !== 'plugin/topology_mountain') return node;
+        return {
+          ...node,
+          enabled: Boolean(nextSettings.enabled),
+          props: {
+            ...node.props,
+            seedMode: nextSettings.seedMode ?? base.seedMode,
+            manualSeed: nextSettings.manualSeed ?? base.manualSeed,
+            positionMode: nextSettings.positionMode ?? base.positionMode,
+            x: nextSettings.x ?? base.x,
+            y: nextSettings.y ?? base.y,
+            size: nextSettings.size ?? base.size,
+            density: nextSettings.density ?? base.density,
+            noise: nextSettings.noise ?? base.noise,
+            alpha: nextSettings.alpha ?? base.alpha,
+            autoAnchor,
+          },
+        };
+      });
+
+      return { ...prev, nodes: nextNodes };
+    });
   };
+
+  const updateTemplateId = (nextTemplateId: TemplateId) => {
+    setProject((prev) => {
+      if (prev.canvas.mode !== 'template') return prev;
+
+      const autoAnchor =
+        nextTemplateId === 'bottom_bar' ||
+        nextTemplateId === 'monitor_bar' ||
+        nextTemplateId === 'shot_on' ||
+        nextTemplateId === 'film' ||
+        nextTemplateId === 'lightroom_footer' ||
+        nextTemplateId === 'minimal_corner'
+          ? 'top-right'
+          : 'bottom-right';
+
+      const nextNodes = prev.nodes.map((node) => {
+        if (node.type === 'legacy/template_layer') {
+          return { ...node, props: { ...node.props, templateId: nextTemplateId } };
+        }
+        if (node.id === 'topology_mountain' && node.type === 'plugin/topology_mountain') {
+          return { ...node, props: { ...node.props, autoAnchor } };
+        }
+        return node;
+      });
+
+      return { ...prev, canvas: { ...prev.canvas, templateId: nextTemplateId }, nodes: nextNodes };
+    });
+  };
+
+  useEffect(() => {
+    const same =
+      persistedTopologyWatermarkSettings.enabled === topologyWatermarkSettings.enabled &&
+      persistedTopologyWatermarkSettings.seedMode === topologyWatermarkSettings.seedMode &&
+      persistedTopologyWatermarkSettings.manualSeed === topologyWatermarkSettings.manualSeed &&
+      persistedTopologyWatermarkSettings.positionMode === topologyWatermarkSettings.positionMode &&
+      persistedTopologyWatermarkSettings.x === topologyWatermarkSettings.x &&
+      persistedTopologyWatermarkSettings.y === topologyWatermarkSettings.y &&
+      persistedTopologyWatermarkSettings.size === topologyWatermarkSettings.size &&
+      persistedTopologyWatermarkSettings.density === topologyWatermarkSettings.density &&
+      persistedTopologyWatermarkSettings.noise === topologyWatermarkSettings.noise &&
+      persistedTopologyWatermarkSettings.alpha === topologyWatermarkSettings.alpha;
+
+    if (same) return;
+    setPersistedTopologyWatermarkSettings(topologyWatermarkSettings);
+  }, [persistedTopologyWatermarkSettings, setPersistedTopologyWatermarkSettings, topologyWatermarkSettings]);
 
   const [topologyMd5, setTopologyMd5] = useState<string | null>(null);
   const [topologyMd5Error, setTopologyMd5Error] = useState<string | null>(null);
@@ -148,14 +275,18 @@ export default function App() {
   );
 
   const applyPresetPayload = (payload: PresetPayload) => {
-    setTemplateId(payload.templateId);
+    setProject(
+      createLegacyProjectV2({
+        templateId: payload.templateId,
+        topologyWatermark: payload.topologyWatermark,
+      }),
+    );
     setExportFormat(payload.exportFormat);
     setJpegQuality(payload.jpegQuality);
     setMaxEdge(payload.maxEdge);
     setJpegBackground(payload.jpegBackground);
     setJpegBackgroundMode(payload.jpegBackgroundMode);
     setBlurRadius(payload.blurRadius);
-    setTopologyWatermarkSettings(payload.topologyWatermark);
     // Restore template overrides
     saveTemplateOverride(payload.templateId, payload.templateOverrides ?? null);
     setTemplateRenderRevision((prev) => prev + 1);
@@ -168,11 +299,10 @@ export default function App() {
       format: exportFormat,
       jpegQuality,
       maxEdge,
-      templateId,
+      project,
       jpegBackground,
       jpegBackgroundMode,
       blurRadius,
-      topologyWatermark: topologyWatermarkSettings,
     },
   });
 
@@ -242,7 +372,7 @@ export default function App() {
         <section className={styles.panel}>
           <PreviewPanel
             file={selectedFile}
-            templateId={templateId}
+            project={project}
             renderRevision={templateRenderRevision}
             exif={selectedExif}
             exifError={selectedExifError}
@@ -251,7 +381,6 @@ export default function App() {
             jpegBackgroundMode={jpegBackgroundMode}
             blurRadius={blurRadius}
             exportFormat={exportFormat}
-            topologyWatermarkSettings={topologyWatermarkSettings}
             seeds={{ fileMd5: topologyMd5, fallback: selectedFileKey ?? 'default' }}
           />
         </section>
@@ -259,7 +388,7 @@ export default function App() {
         <section className={styles.panel}>
           <InspectorPanel
             templateId={templateId}
-            onTemplateChange={setTemplateId}
+            onTemplateChange={updateTemplateId}
             onTemplateOverridesChange={() => setTemplateRenderRevision((prev) => prev + 1)}
             exportFormat={exportFormat}
             onExportFormatChange={setExportFormat}
