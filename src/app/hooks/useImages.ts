@@ -8,6 +8,14 @@ export type ImageItem = {
   thumbnailUrl: string | null;
 };
 
+export type ImportProgress = {
+  isImporting: boolean;
+  total: number;
+  processed: number;
+  currentBatch: number;
+  totalBatches: number;
+};
+
 const ADD_BATCH_SIZE = 48;
 const THUMBNAIL_BATCH_SIZE = 8;
 const THUMBNAIL_SIZE = 96;
@@ -38,6 +46,13 @@ function isSupportedImageFile(file: File): boolean {
 export function useImages() {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  const [importProgress, setImportProgress] = useState<ImportProgress>({
+    isImporting: false,
+    total: 0,
+    processed: 0,
+    currentBatch: 0,
+    totalBatches: 0,
+  });
   const imagesRef = useRef<ImageItem[]>([]);
   const isMountedRef = useRef(true);
   const thumbnailPendingRef = useRef(new Set<string>());
@@ -139,24 +154,62 @@ export function useImages() {
     const wasEmpty = imagesRef.current.length === 0;
     let cursor = 0;
     const version = ++importVersionRef.current;
+    const totalBatches = Math.ceil(next.length / ADD_BATCH_SIZE);
+    let currentBatch = 0;
+    let processed = 0;
+
+    setImportProgress({
+      isImporting: true,
+      total: next.length,
+      processed: 0,
+      currentBatch: 0,
+      totalBatches,
+    });
 
     const appendBatch = () => {
       if (importVersionRef.current !== version) return;
       const batch = next.slice(cursor, cursor + ADD_BATCH_SIZE);
       const imageItems = createImageItems(batch);
       cursor += batch.length;
+      currentBatch += 1;
+      processed += batch.length;
       if (imageItems.length === 0) {
+        if (importVersionRef.current === version) {
+          setImportProgress({
+            isImporting: false,
+            total: next.length,
+            processed: next.length,
+            currentBatch: totalBatches,
+            totalBatches,
+          });
+        }
         if (wasEmpty) setSelectedIndex(0);
         return;
       }
 
       setImages((prev) => [...prev, ...imageItems]);
       void generateThumbnails(imageItems);
+      setImportProgress({
+        isImporting: true,
+        total: next.length,
+        processed,
+        currentBatch: Math.min(totalBatches, currentBatch),
+        totalBatches,
+      });
 
       if (cursor < next.length) {
         requestAnimationFrame(appendBatch);
       } else if (wasEmpty) {
         setSelectedIndex(0);
+        if (importVersionRef.current === version) {
+          setImportProgress({
+            isImporting: false,
+            total: next.length,
+            processed: next.length,
+            currentBatch: totalBatches,
+            totalBatches,
+          });
+        }
       }
     };
 
@@ -185,6 +238,13 @@ export function useImages() {
   function clearAll() {
     importVersionRef.current++;
     for (const image of imagesRef.current) revokeImage(image);
+    setImportProgress({
+      isImporting: false,
+      total: 0,
+      processed: 0,
+      currentBatch: 0,
+      totalBatches: 0,
+    });
     setImages([]);
     setSelectedIndex(0);
   }
@@ -196,6 +256,7 @@ export function useImages() {
     selectedIndex,
     setSelectedIndex,
     selected,
+    importProgress,
     addFiles,
     removeSelected,
     clearAll,
