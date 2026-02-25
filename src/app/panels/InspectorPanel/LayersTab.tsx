@@ -8,7 +8,7 @@ import { ensureBuiltinNodeTypesRegistered, getNodeType } from '../../../core';
 
 import { SettingsFieldsForm } from './SettingsFieldsForm';
 
-type LayerId = 'template' | 'photo' | 'topology_mountain';
+type LayerId = 'template' | 'topology_mountain';
 
 type Props = {
   templateId: TemplateId;
@@ -59,7 +59,6 @@ export function LayersTab({
       <Field label="选择图层">
         <select className={ui.control} value={layer} onChange={(e) => setLayer(e.target.value as LayerId)}>
           <option value="template">模板（{templateId}）</option>
-          <option value="photo">照片</option>
           <option value="topology_mountain">山水徽（插件）</option>
         </select>
       </Field>
@@ -68,13 +67,6 @@ export function LayersTab({
         <div className={ui.section}>
           <div className={ui.sectionTitle}>模板层</div>
           <div className={ui.hint}>当前仍由 `legacy/template_layer` 渲染（迁移中）。</div>
-        </div>
-      ) : null}
-
-      {layer === 'photo' ? (
-        <div className={ui.section}>
-          <div className={ui.sectionTitle}>照片层</div>
-          <div className={ui.hint}>等同于 `core/image` 节点。</div>
         </div>
       ) : null}
 
