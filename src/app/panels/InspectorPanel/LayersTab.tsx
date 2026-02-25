@@ -169,21 +169,19 @@ function insertNodeBeforeTemplateOverlay(nodes: RenderNodeJson[], node: RenderNo
 
 function moveNode(project: ProjectJsonV2, nodeId: string, direction: -1 | 1): ProjectJsonV2 {
   const nodes = Array.isArray(project.nodes) ? project.nodes : [];
-  const currentIndex = nodes.findIndex((n) => n.id === nodeId);
-  if (currentIndex < 0) return project;
-
-  const visibleIndices = nodes.map((n, i) => (isVisibleNode(n) ? i : null)).filter((i): i is number => typeof i === 'number');
-  const visiblePos = visibleIndices.indexOf(currentIndex);
+  const visibleNodes = nodes.filter(isVisibleNode);
+  const visiblePos = visibleNodes.findIndex((n) => n.id === nodeId);
   if (visiblePos < 0) return project;
 
   const targetPos = visiblePos + direction;
-  if (targetPos < 0 || targetPos >= visibleIndices.length) return project;
+  if (targetPos < 0 || targetPos >= visibleNodes.length) return project;
 
-  const targetIndex = visibleIndices[targetPos]!;
-  const next = nodes.slice();
-  const tmp = next[currentIndex]!;
-  next[currentIndex] = next[targetIndex]!;
-  next[targetIndex] = tmp;
+  const reorderedVisible = visibleNodes.slice();
+  const [moved] = reorderedVisible.splice(visiblePos, 1);
+  reorderedVisible.splice(targetPos, 0, moved);
+
+  let visibleCursor = 0;
+  const next = nodes.map((node) => (isVisibleNode(node) ? reorderedVisible[visibleCursor++]! : node));
   return { ...project, nodes: next };
 }
 

@@ -61,7 +61,19 @@ export function useImages() {
     const target = imagesRef.current[selectedIndex];
     if (!target) return;
     URL.revokeObjectURL(target.url);
-    setImages((prev) => prev.filter((im) => im.id !== target.id));
+    setImages((prev) => {
+      const targetIndex = prev.findIndex((im) => im.id === target.id);
+      if (targetIndex < 0) return prev;
+
+      const next = prev.filter((im) => im.id !== target.id);
+      if (next.length === 0) {
+        setSelectedIndex(0);
+      } else {
+        const nextIndex = Math.min(targetIndex, next.length - 1);
+        setSelectedIndex(nextIndex);
+      }
+      return next;
+    });
   }
 
   function clearAll() {
@@ -82,4 +94,3 @@ export function useImages() {
     clearAll,
   };
 }
-
