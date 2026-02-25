@@ -259,6 +259,7 @@ export default function App() {
         blurRadius,
         topologyWatermark: topologyWatermarkSettings,
         templateOverrides: loadTemplateOverride(templateId),
+        project,
       };
     },
     [
@@ -268,6 +269,7 @@ export default function App() {
       jpegBackgroundMode,
       jpegQuality,
       maxEdge,
+      project,
       templateId,
       topologyWatermarkSettings,
       templateRenderRevision, // re-read overrides when they change
@@ -275,12 +277,15 @@ export default function App() {
   );
 
   const applyPresetPayload = (payload: PresetPayload) => {
-    setProject(
-      createLegacyProjectV2({
-        templateId: payload.templateId,
-        topologyWatermark: payload.topologyWatermark,
-      }),
-    );
+    const nextProject =
+      payload.project && payload.project.version === '2.0'
+        ? payload.project
+        : createLegacyProjectV2({
+            templateId: payload.templateId,
+            topologyWatermark: payload.topologyWatermark,
+          });
+
+    setProject(nextProject);
     setExportFormat(payload.exportFormat);
     setJpegQuality(payload.jpegQuality);
     setMaxEdge(payload.maxEdge);

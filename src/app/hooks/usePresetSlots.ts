@@ -5,6 +5,7 @@ import {
   WATERMARK_TEMPLATES,
   type ExportFormat,
   type JpegBackgroundMode,
+  type ProjectJsonV2,
   type TemplateId,
   type TopologyWatermarkSettings,
 } from '../../core';
@@ -20,6 +21,7 @@ export type PresetPayload = {
   blurRadius: number;
   topologyWatermark: TopologyWatermarkSettings;
   templateOverrides?: TemplateOverride | null;
+  project?: ProjectJsonV2 | null;
 };
 
 export type PresetSlot = {
@@ -49,6 +51,7 @@ const DEFAULT_PAYLOAD: PresetPayload = {
   blurRadius: 30,
   topologyWatermark: DEFAULT_TOPOLOGY_WATERMARK_SETTINGS,
   templateOverrides: null,
+  project: null,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -103,6 +106,24 @@ function sanitizeTopologyWatermarkSettings(raw: unknown): TopologyWatermarkSetti
   };
 }
 
+function sanitizeProjectJsonV2(raw: unknown): ProjectJsonV2 | null {
+  if (!isRecord(raw)) return null;
+  if (raw.version !== '2.0') return null;
+  const canvas = raw.canvas;
+  if (!isRecord(canvas)) return null;
+  const mode = canvas.mode;
+  if (mode !== 'template' && mode !== 'fixed_size') return null;
+  if (mode === 'template') {
+    const templateId = sanitizeTemplateId(canvas.templateId);
+    const background = isRecord(canvas.background) ? (canvas.background as ProjectJsonV2['canvas']['background']) : undefined;
+    return { ...(raw as ProjectJsonV2), canvas: { mode: 'template', templateId, background } };
+  }
+  const width = asFiniteNumber(canvas.width);
+  const height = asFiniteNumber(canvas.height);
+  if (typeof width !== 'number' || typeof height !== 'number') return null;
+  return raw as ProjectJsonV2;
+}
+
 function sanitizePayload(raw: unknown): PresetPayload {
   const base = DEFAULT_PAYLOAD;
   if (!isRecord(raw)) return base;
@@ -129,6 +150,8 @@ function sanitizePayload(raw: unknown): PresetPayload {
   // The overrides system already sanitizes on load via loadTemplateOverride.
   const templateOverrides = isRecord(raw.templateOverrides) ? (raw.templateOverrides as TemplateOverride) : null;
 
+  const project = sanitizeProjectJsonV2(raw.project);
+
   return {
     templateId,
     exportFormat,
@@ -139,6 +162,7 @@ function sanitizePayload(raw: unknown): PresetPayload {
     blurRadius,
     topologyWatermark,
     templateOverrides,
+    project,
   };
 }
 
