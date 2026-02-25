@@ -83,79 +83,83 @@ export default function InspectorPanel(props: Props) {
     [batchBadge],
   );
 
-  return (
-    <div className={panel.panelRoot}>
-      <div className={panel.panelHeader}>
-        <div>
-          <div className={panel.panelTitle}>设置</div>
-        </div>
-      </div>
+	return (
+	    <div className={panel.panelRoot}>
+	      <div className={panel.panelHeader}>
+	        <div>
+	          <div className={panel.panelTitle}>设置</div>
+	        </div>
+	      </div>
 
-      <div className={panel.form}>
-        <Tabs value={tab} items={items} onChange={setTab} idPrefix="inspector" ariaLabel="设置面板 Tabs" />
+	      <div className={panel.form}>
+	        <div className={panel.formTabs}>
+	          <Tabs value={tab} items={items} onChange={setTab} idPrefix="inspector" ariaLabel="设置面板 Tabs" />
+	        </div>
 
-        {tab === 'style' ? (
-          <div role="tabpanel" id="panel-inspector-style" aria-labelledby="tab-inspector-style">
-            <StyleTab
-              templateId={props.templateId}
-              onTemplateOverridesChange={props.onTemplateOverridesChange}
-              hasSelection={props.hasSelection}
-              exif={props.exif}
-              exifError={props.exifError}
-              isReadingExif={props.isReadingExif}
-              exportFormat={props.exportFormat}
-              jpegBackground={props.jpegBackground}
-              onJpegBackgroundChange={props.onJpegBackgroundChange}
-              jpegBackgroundMode={props.jpegBackgroundMode}
-              onJpegBackgroundModeChange={props.onJpegBackgroundModeChange}
-              blurRadius={props.blurRadius}
-              onBlurRadiusChange={props.onBlurRadiusChange}
-              topologyWatermarkSettings={props.topologyWatermarkSettings}
-              onTopologyWatermarkSettingsChange={props.onTopologyWatermarkSettingsChange}
-              topologyMd5={props.topologyMd5}
-              topologyMd5Error={props.topologyMd5Error}
-              isComputingTopologyMd5={props.isComputingTopologyMd5}
-            />
-          </div>
-        ) : null}
+	        <div className={panel.formBody}>
+	          {tab === 'style' ? (
+	            <div role="tabpanel" id="panel-inspector-style" aria-labelledby="tab-inspector-style">
+	              <StyleTab
+	                templateId={props.templateId}
+	                onTemplateOverridesChange={props.onTemplateOverridesChange}
+	                hasSelection={props.hasSelection}
+	                exif={props.exif}
+	                exifError={props.exifError}
+	                isReadingExif={props.isReadingExif}
+	                exportFormat={props.exportFormat}
+	                jpegBackground={props.jpegBackground}
+	                onJpegBackgroundChange={props.onJpegBackgroundChange}
+	                jpegBackgroundMode={props.jpegBackgroundMode}
+	                onJpegBackgroundModeChange={props.onJpegBackgroundModeChange}
+	                blurRadius={props.blurRadius}
+	                onBlurRadiusChange={props.onBlurRadiusChange}
+	                topologyWatermarkSettings={props.topologyWatermarkSettings}
+	                onTopologyWatermarkSettingsChange={props.onTopologyWatermarkSettingsChange}
+	                topologyMd5={props.topologyMd5}
+	                topologyMd5Error={props.topologyMd5Error}
+	                isComputingTopologyMd5={props.isComputingTopologyMd5}
+	              />
+	            </div>
+	          ) : null}
 
-        {tab === 'layers' ? (
-          <div role="tabpanel" id="panel-inspector-layers" aria-labelledby="tab-inspector-layers">
-            <LayersTab
-              project={props.project}
-              onProjectChange={props.onProjectChange}
-              hasSelection={props.hasSelection}
-              topologyMd5={props.topologyMd5}
-              topologyMd5Error={props.topologyMd5Error}
-              isComputingTopologyMd5={props.isComputingTopologyMd5}
-            />
-          </div>
-        ) : null}
+	          {tab === 'layers' ? (
+	            <div role="tabpanel" id="panel-inspector-layers" aria-labelledby="tab-inspector-layers">
+	              <LayersTab
+	                project={props.project}
+	                onProjectChange={props.onProjectChange}
+	                hasSelection={props.hasSelection}
+	                topologyMd5={props.topologyMd5}
+	                topologyMd5Error={props.topologyMd5Error}
+	                isComputingTopologyMd5={props.isComputingTopologyMd5}
+	              />
+	            </div>
+	          ) : null}
 
-        {tab === 'export' ? (
-          <div role="tabpanel" id="panel-inspector-export" aria-labelledby="tab-inspector-export">
-            <ExportTab
-              exportFormat={props.exportFormat}
-              onExportFormatChange={props.onExportFormatChange}
-              jpegQuality={props.jpegQuality}
-              onJpegQualityChange={props.onJpegQualityChange}
-              maxEdge={props.maxEdge}
-              onMaxEdgeChange={props.onMaxEdgeChange}
-              hasSelection={props.hasSelection}
-              imagesCount={props.imagesCount}
-              isExporting={props.isExporting}
-              exportStatus={props.exportStatus}
-              onExportSelected={props.onExportSelected}
-              onExportAll={props.onExportAll}
-              batchState={props.batchState}
-              onCancelBatch={props.onCancelBatch}
-              onRetryFailed={props.onRetryFailed}
-              presetPayload={props.presetPayload}
-              onApplyPresetPayload={props.onApplyPresetPayload}
-            />
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
+	          {tab === 'export' ? (
+	            <div role="tabpanel" id="panel-inspector-export" aria-labelledby="tab-inspector-export">
+	              <ExportTab
+	                exportFormat={props.exportFormat}
+	                onExportFormatChange={props.onExportFormatChange}
+	                jpegQuality={props.jpegQuality}
+	                onJpegQualityChange={props.onJpegQualityChange}
+	                maxEdge={props.maxEdge}
+	                onMaxEdgeChange={props.onMaxEdgeChange}
+	                hasSelection={props.hasSelection}
+	                imagesCount={props.imagesCount}
+	                isExporting={props.isExporting}
+	                exportStatus={props.exportStatus}
+	                onExportSelected={props.onExportSelected}
+	                onExportAll={props.onExportAll}
+	                batchState={props.batchState}
+	                onCancelBatch={props.onCancelBatch}
+	                onRetryFailed={props.onRetryFailed}
+	                presetPayload={props.presetPayload}
+	                onApplyPresetPayload={props.onApplyPresetPayload}
+	              />
+	            </div>
+	          ) : null}
+	        </div>
+	      </div>
+	    </div>
+	  );
+	}
