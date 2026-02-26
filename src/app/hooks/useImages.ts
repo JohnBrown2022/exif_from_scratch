@@ -294,8 +294,10 @@ export function useImages() {
 
       if (cursor < next.length) {
         requestAnimationFrame(appendBatch);
-      } else if (wasEmpty) {
-        setSelectedIndex(0);
+      } else {
+        if (wasEmpty) {
+          setSelectedIndex(0);
+        }
         if (importVersionRef.current === version) {
           setImportProgress({
             isImporting: false,

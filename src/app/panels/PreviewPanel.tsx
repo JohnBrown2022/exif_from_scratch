@@ -158,14 +158,9 @@ export default function PreviewPanel({
           })();
       setCachedPreview(fileKey, next);
 
-      try {
-        if (cancelled) return;
-        setLoaded({ fileKey, ...next });
-      } catch (err) {
-        throw err;
-      } finally {
-        if (!cancelled) setIsDecoding(false);
-      }
+      if (cancelled) return;
+      setLoaded({ fileKey, ...next });
+      if (!cancelled) setIsDecoding(false);
     }
 
     run().catch((err) => {
