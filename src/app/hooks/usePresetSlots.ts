@@ -38,7 +38,6 @@ type PresetSlotsV1 = {
 
 const STORAGE_KEY = 'presetSlots:v1';
 const SEED_MARK_KEY = 'presetSlotsSeeded:v1';
-const SLOTS_COUNT = 10;
 const ALLOWED_TEMPLATE_IDS = WATERMARK_TEMPLATES.map((t) => t.id);
 const BUILTIN_PRESETS_URL = `${import.meta.env.BASE_URL}exif-watermark-presets.json`;
 
@@ -199,8 +198,17 @@ function sanitizeSlot(index: number, raw: unknown): PresetSlot | null {
   return { name, updatedAt, payload };
 }
 
+function normalizeSlots(slots: Array<PresetSlot | null>): Array<PresetSlot | null> {
+  const next = [...slots];
+  while (next.length > 0 && next[next.length - 1] === null) {
+    next.pop();
+  }
+  next.push(null);
+  return next;
+}
+
 function defaultSlots(): Array<PresetSlot | null> {
-  return Array.from({ length: SLOTS_COUNT }, () => null);
+  return [null];
 }
 
 function sanitizeSlotsFile(raw: unknown): Array<PresetSlot | null> {
@@ -208,11 +216,8 @@ function sanitizeSlotsFile(raw: unknown): Array<PresetSlot | null> {
   if (raw.version !== 1) return defaultSlots();
   if (!Array.isArray(raw.slots)) return defaultSlots();
 
-  const out: Array<PresetSlot | null> = [];
-  for (let i = 0; i < SLOTS_COUNT; i++) {
-    out.push(sanitizeSlot(i, raw.slots[i]));
-  }
-  return out;
+  const out = raw.slots.map((slot, index) => sanitizeSlot(index, slot));
+  return normalizeSlots(out);
 }
 
 function loadFromStorage(): Array<PresetSlot | null> {
@@ -226,12 +231,13 @@ function loadFromStorage(): Array<PresetSlot | null> {
 }
 
 function buildSlotsFile(slots: Array<PresetSlot | null>): PresetSlotsV1 {
-  const normalized = Array.from({ length: SLOTS_COUNT }, (_, i) => slots[i] ?? null);
-  return { version: 1, slots: normalized };
+  return { version: 1, slots: normalizeSlots(slots) };
 }
 
 function mergeSlots(current: Array<PresetSlot | null>, defaults: Array<PresetSlot | null>): Array<PresetSlot | null> {
-  return Array.from({ length: SLOTS_COUNT }, (_, i) => current[i] ?? defaults[i] ?? null);
+  const maxLen = Math.max(current.length, defaults.length);
+  const merged = Array.from({ length: maxLen }, (_, i) => current[i] ?? defaults[i] ?? null);
+  return normalizeSlots(merged);
 }
 
 function parseSeedRevision(value: string | null): number {
@@ -300,7 +306,7 @@ export function usePresetSlots() {
       const existing = next[index];
       const name = existing?.name ?? slotLabel(index);
       next[index] = { name, updatedAt: new Date().toISOString(), payload };
-      return next;
+      return normalizeSlots(next);
     });
   }
 
@@ -320,7 +326,7 @@ export function usePresetSlots() {
     setSlots((prev) => {
       const next = [...prev];
       next[index] = null;
-      return next;
+      return normalizeSlots(next);
     });
   }
 
@@ -332,7 +338,7 @@ export function usePresetSlots() {
   async function importJson(file: File): Promise<{ imported: number; ignored: number }> {
     const text = await file.text();
     const parsed = JSON.parse(text) as unknown;
-    const sourceSlotsLen = isRecord(parsed) && Array.isArray(parsed.slots) ? Math.min(SLOTS_COUNT, parsed.slots.length) : 0;
+    const sourceSlotsLen = isRecord(parsed) && Array.isArray(parsed.slots) ? parsed.slots.length : 0;
 
     const nextSlots = sanitizeSlotsFile(parsed);
     const imported = nextSlots.filter(Boolean).length;

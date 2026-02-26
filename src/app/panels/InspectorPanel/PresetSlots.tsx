@@ -46,8 +46,8 @@ export function PresetSlots({ currentPayload, onApplyPayload }: Props) {
   }, [persisted, storageSupported]);
 
   return (
-    <Accordion title={`预设槽位（${filledCount}/10）`} defaultOpen={false}>
-      <div className={ui.hint}>保存“项目（模板 + 图层 + 水印）+ 导出设置”组合到本机浏览器（localStorage）。</div>
+    <Accordion title={`预设槽位（已保存 ${filledCount}）`} defaultOpen={false}>
+      <div className={ui.hint}>保存“项目（模板 + 图层 + 水印）+ 导出设置”组合到本机浏览器（localStorage），并始终保留一个空槽位用于新增。</div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <div className={ui.hint}>{persistedLabel}</div>
@@ -74,22 +74,22 @@ export function PresetSlots({ currentPayload, onApplyPayload }: Props) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {slots.map((slot, index) => {
           const label = slot?.name ?? `槽位 ${index + 1}`;
-          const meta = slot ? `更新：${formatUpdatedAt(slot.updatedAt)}` : '空槽位';
+          const meta = slot ? `更新：${formatUpdatedAt(slot.updatedAt)}` : '空槽位 · 可保存当前设置';
 
           return (
             <div
               key={index}
               style={{
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                flexDirection: 'column',
+                alignItems: 'stretch',
                 gap: 10,
                 paddingBottom: 10,
                 borderBottom: '1px solid rgba(255,255,255,0.06)',
               }}
             >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-word' }}>
                   {label}
                 </div>
                 <div className={ui.muted} style={{ fontSize: 11 }}>
@@ -97,7 +97,7 @@ export function PresetSlots({ currentPayload, onApplyPayload }: Props) {
                 </div>
               </div>
 
-              <div className={ui.buttonRow} style={{ gap: 8, justifyContent: 'flex-end' }}>
+              <div className={ui.buttonRow} style={{ gap: 8, justifyContent: 'flex-start', flexWrap: 'wrap' }}>
                 <Button
                   type="button"
                   disabled={!slot}
