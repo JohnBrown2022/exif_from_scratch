@@ -22,3 +22,12 @@ This repo includes `.github/workflows/pages.yml` (auto deploy on push to `master
 1) Create a GitHub repo and push this project
 2) In GitHub repo: `Settings → Pages → Build and deployment → GitHub Actions`
 3) After the workflow finishes, open `https://<user>.github.io/<repo>/` in **iOS Safari** → Share → “Add to Home Screen”
+
+## Docs
+
+Markdown notes and planning files are consolidated under `docs/notes/`:
+
+- Architecture / roadmap: `docs/notes/project.md`, `docs/notes/v1.md`, `docs/notes/v2.md`
+- Merge recap: `docs/notes/merge_recap_2026-02-26.md`
+- Third-party / assistant notes: `docs/notes/THIRD_PARTY_NOTICES.md`, `docs/notes/GEMINI.md`
+- Working notes: `docs/notes/init.md`, `docs/notes/layout.md`, `docs/notes/findings.md`, `docs/notes/progress.md`, `docs/notes/task_plan.md`
