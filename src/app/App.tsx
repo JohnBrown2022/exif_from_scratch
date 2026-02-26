@@ -7,21 +7,40 @@ import { useExportController } from './hooks/useExportController';
 import { useImages } from './hooks/useImages';
 import { useSelectedExif } from './hooks/useSelectedExif';
 import type { PresetPayload } from './hooks/usePresetSlots';
-import { fingerprintMd5Hex, type ExportFormat, type JpegBackgroundMode, type TemplateId, type TopologyWatermarkRenderOptions, type TopologyWatermarkSettings } from '../core';
+import {
+  DEFAULT_TOPOLOGY_WATERMARK_SETTINGS,
+  createLegacyProjectV2,
+  fingerprintMd5Hex,
+  getTopologyAutoAnchor,
+  type ExportFormat,
+  type JpegBackgroundMode,
+  type ProjectJsonV2,
+  type TemplateId,
+  type TopologyWatermarkSettings,
+} from '../core';
 import { loadTemplateOverride, saveTemplateOverride } from '../core/render/engine/overrides';
 import { useTopologyWatermarkSettings } from './hooks/useTopologyWatermarkSettings';
 
 export default function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const { images, selectedIndex, setSelectedIndex, selected, addFiles, removeSelected, clearAll } = useImages();
+  const {
+    images,
+    selectedIndex,
+    setSelectedIndex,
+    selected,
+    importProgress,
+    requestVisibleThumbnails,
+    addFiles,
+    removeSelected,
+    clearAll,
+  } = useImages();
   const selectedFile = selected?.file ?? null;
   const selectedFileKey = useMemo(
     () => (selectedFile ? `${selectedFile.name}:${selectedFile.size}:${selectedFile.lastModified}` : null),
     [selectedFile],
   );
 
-  const [templateId, setTemplateId] = useState<TemplateId>('bottom_bar');
   const [templateRenderRevision, setTemplateRenderRevision] = useState(0);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('jpeg');
   const [jpegQuality, setJpegQuality] = useState<number>(0.92);
@@ -75,10 +94,85 @@ export default function App() {
     };
   }, []);
 
-  const { settings: topologyWatermarkSettings, setSettings: setTopologyWatermarkSettings } = useTopologyWatermarkSettings();
+  const { settings: persistedTopologyWatermarkSettings, setSettings: setPersistedTopologyWatermarkSettings } =
+    useTopologyWatermarkSettings();
+
+  const [project, setProject] = useState<ProjectJsonV2>(() =>
+    createLegacyProjectV2({
+      templateId: 'bottom_bar',
+      topologyWatermark: persistedTopologyWatermarkSettings,
+    }),
+  );
+
+  const templateId = useMemo(() => (project.canvas.mode === 'template' ? (project.canvas.templateId as TemplateId) : 'bottom_bar'), [project.canvas]);
+
+  const topologyWatermarkSettings = useMemo<TopologyWatermarkSettings>(() => {
+    if (!Array.isArray(project.nodes)) return DEFAULT_TOPOLOGY_WATERMARK_SETTINGS;
+    const base = DEFAULT_TOPOLOGY_WATERMARK_SETTINGS;
+    const node = project.nodes.find((n) => n.id === 'topology_mountain' && n.type === 'plugin/topology_mountain');
+    const props = node && typeof node.props === 'object' && node.props ? (node.props as Record<string, unknown>) : {};
+    const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+    const asFiniteNumber = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : undefined);
+    const asEnum = <T extends string>(value: unknown, allowed: readonly T[]): T | undefined => {
+      if (typeof value !== 'string') return undefined;
+      return (allowed as readonly string[]).includes(value) ? (value as T) : undefined;
+    };
+
+    return {
+      enabled: node?.enabled === true,
+      seedMode: asEnum(props.seedMode, ['file_md5', 'manual'] as const) ?? base.seedMode,
+      manualSeed: typeof props.manualSeed === 'string' ? props.manualSeed : base.manualSeed,
+      positionMode: asEnum(props.positionMode, ['auto', 'manual'] as const) ?? base.positionMode,
+      x: clamp(asFiniteNumber(props.x) ?? base.x, 0, 1),
+      y: clamp(asFiniteNumber(props.y) ?? base.y, 0, 1),
+      size: clamp(asFiniteNumber(props.size) ?? base.size, 0, 1),
+      density: clamp(Math.round(asFiniteNumber(props.density) ?? base.density), 4, 24),
+      noise: clamp(asFiniteNumber(props.noise) ?? base.noise, 0, 3),
+      alpha: clamp(asFiniteNumber(props.alpha) ?? base.alpha, 0, 1),
+    };
+  }, [project.nodes]);
+
   const updateTopologyWatermarkSettings = (patch: Partial<TopologyWatermarkSettings>) => {
-    setTopologyWatermarkSettings((prev) => ({ ...prev, ...patch }));
+    setProject((prev) => {
+      const nodes = Array.isArray(prev.nodes) ? prev.nodes : [];
+      const template = prev.canvas.mode === 'template' ? (prev.canvas.templateId as TemplateId) : 'bottom_bar';
+      const autoAnchor = getTopologyAutoAnchor(template);
+
+      const nextNodes = nodes.map((node) => {
+        if (node.id !== 'topology_mountain' || node.type !== 'plugin/topology_mountain') return node;
+        const { enabled, ...propPatch } = patch;
+        const nextEnabled = typeof enabled === 'boolean' ? enabled : node.enabled;
+        return {
+          ...node,
+          ...(typeof enabled === 'boolean' ? { enabled: nextEnabled } : null),
+          props: {
+            ...(typeof node.props === 'object' && node.props ? node.props : {}),
+            ...propPatch,
+            autoAnchor,
+          },
+        };
+      });
+
+      return { ...prev, nodes: nextNodes };
+    });
   };
+
+  useEffect(() => {
+    const same =
+      persistedTopologyWatermarkSettings.enabled === topologyWatermarkSettings.enabled &&
+      persistedTopologyWatermarkSettings.seedMode === topologyWatermarkSettings.seedMode &&
+      persistedTopologyWatermarkSettings.manualSeed === topologyWatermarkSettings.manualSeed &&
+      persistedTopologyWatermarkSettings.positionMode === topologyWatermarkSettings.positionMode &&
+      persistedTopologyWatermarkSettings.x === topologyWatermarkSettings.x &&
+      persistedTopologyWatermarkSettings.y === topologyWatermarkSettings.y &&
+      persistedTopologyWatermarkSettings.size === topologyWatermarkSettings.size &&
+      persistedTopologyWatermarkSettings.density === topologyWatermarkSettings.density &&
+      persistedTopologyWatermarkSettings.noise === topologyWatermarkSettings.noise &&
+      persistedTopologyWatermarkSettings.alpha === topologyWatermarkSettings.alpha;
+
+    if (same) return;
+    setPersistedTopologyWatermarkSettings(topologyWatermarkSettings);
+  }, [persistedTopologyWatermarkSettings, setPersistedTopologyWatermarkSettings, topologyWatermarkSettings]);
 
   const [topologyMd5, setTopologyMd5] = useState<string | null>(null);
   const [topologyMd5Error, setTopologyMd5Error] = useState<string | null>(null);
@@ -117,28 +211,6 @@ export default function App() {
     };
   }, [selectedFile, selectedFileKey, topologyWatermarkSettings.seedMode]);
 
-  const topologyWatermarkRender = useMemo<TopologyWatermarkRenderOptions | null>(() => {
-    if (!topologyWatermarkSettings.enabled) return null;
-
-    const manualSeed = topologyWatermarkSettings.manualSeed.trim();
-    const seed =
-      topologyWatermarkSettings.seedMode === 'manual'
-        ? manualSeed || topologyMd5 || selectedFileKey || 'default'
-        : topologyMd5 || selectedFileKey || 'default';
-
-    return {
-      enabled: true,
-      seed,
-      positionMode: topologyWatermarkSettings.positionMode,
-      x: topologyWatermarkSettings.x,
-      y: topologyWatermarkSettings.y,
-      size: topologyWatermarkSettings.size,
-      density: topologyWatermarkSettings.density,
-      noise: topologyWatermarkSettings.noise,
-      alpha: topologyWatermarkSettings.alpha,
-    };
-  }, [selectedFileKey, topologyMd5, topologyWatermarkSettings]);
-
   const { exif: selectedExif, exifError: selectedExifError, isReadingExif } = useSelectedExif(selectedFile);
 
   const presetPayload = useMemo<PresetPayload>(
@@ -154,6 +226,7 @@ export default function App() {
         blurRadius,
         topologyWatermark: topologyWatermarkSettings,
         templateOverrides: loadTemplateOverride(templateId),
+        project,
       };
     },
     [
@@ -163,6 +236,7 @@ export default function App() {
       jpegBackgroundMode,
       jpegQuality,
       maxEdge,
+      project,
       templateId,
       topologyWatermarkSettings,
       templateRenderRevision, // re-read overrides when they change
@@ -170,14 +244,21 @@ export default function App() {
   );
 
   const applyPresetPayload = (payload: PresetPayload) => {
-    setTemplateId(payload.templateId);
+    const nextProject =
+      payload.project && payload.project.version === '2.0'
+        ? payload.project
+        : createLegacyProjectV2({
+            templateId: payload.templateId,
+            topologyWatermark: payload.topologyWatermark,
+          });
+
+    setProject(nextProject);
     setExportFormat(payload.exportFormat);
     setJpegQuality(payload.jpegQuality);
     setMaxEdge(payload.maxEdge);
     setJpegBackground(payload.jpegBackground);
     setJpegBackgroundMode(payload.jpegBackgroundMode);
     setBlurRadius(payload.blurRadius);
-    setTopologyWatermarkSettings(payload.topologyWatermark);
     // Restore template overrides
     saveTemplateOverride(payload.templateId, payload.templateOverrides ?? null);
     setTemplateRenderRevision((prev) => prev + 1);
@@ -190,11 +271,10 @@ export default function App() {
       format: exportFormat,
       jpegQuality,
       maxEdge,
-      templateId,
+      project,
       jpegBackground,
       jpegBackgroundMode,
       blurRadius,
-      topologyWatermark: topologyWatermarkSettings,
     },
   });
 
@@ -253,7 +333,9 @@ export default function App() {
           <ImageListPanel
             images={images}
             selectedIndex={selectedIndex}
+            importProgress={importProgress}
             onSelect={setSelectedIndex}
+            onRequestVisibleThumbnails={requestVisibleThumbnails}
             onImport={openFilePicker}
             onRemoveSelected={removeSelected}
             onClearAll={clearAll}
@@ -264,7 +346,7 @@ export default function App() {
         <section className={styles.panel}>
           <PreviewPanel
             file={selectedFile}
-            templateId={templateId}
+            project={project}
             renderRevision={templateRenderRevision}
             exif={selectedExif}
             exifError={selectedExifError}
@@ -273,14 +355,13 @@ export default function App() {
             jpegBackgroundMode={jpegBackgroundMode}
             blurRadius={blurRadius}
             exportFormat={exportFormat}
-            topologyWatermark={topologyWatermarkRender}
+            seeds={{ fileMd5: topologyMd5, fallback: selectedFileKey ?? 'default' }}
           />
         </section>
 
-        <section className={styles.panel}>
+        <section className={`${styles.panel} ${styles.inspectorPanel}`}>
           <InspectorPanel
             templateId={templateId}
-            onTemplateChange={setTemplateId}
             onTemplateOverridesChange={() => setTemplateRenderRevision((prev) => prev + 1)}
             exportFormat={exportFormat}
             onExportFormatChange={setExportFormat}
@@ -299,6 +380,8 @@ export default function App() {
             topologyMd5={topologyMd5}
             topologyMd5Error={topologyMd5Error}
             isComputingTopologyMd5={isComputingTopologyMd5}
+            project={project}
+            onProjectChange={setProject}
             presetPayload={presetPayload}
             onApplyPresetPayload={applyPresetPayload}
             hasSelection={Boolean(selectedFile)}

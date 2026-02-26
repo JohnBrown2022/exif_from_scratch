@@ -1,0 +1,88 @@
+{
+  "templateId": "shot_on",
+  "backdropNodes": [],
+  "overlayNodes": [
+    {
+      "id": "tpl_overlay_shot_on_bar_bg",
+      "type": "core/rect",
+      "props": {
+        "zone": "bar",
+        "style": {
+          "fill": "rgba(0,0,0,0.46)"
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_shot_on_copy_stack",
+      "type": "core/text_stack",
+      "props": {
+        "zone": "bar",
+        "grid": {
+          "col": 1,
+          "colSpan": 12,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "direction": "vertical",
+        "gap": {
+          "designPx": 8,
+          "minPx": 6
+        },
+        "align": "left",
+        "vAlign": "top",
+        "items": [
+          {
+            "id": "slogan",
+            "label": "标语",
+            "bind": {
+              "kind": "concat",
+              "parts": [
+                {
+                  "kind": "literal",
+                  "value": "SHOT ON "
+                },
+                {
+                  "kind": "cameraName",
+                  "fallback": "Unknown Camera"
+                }
+              ],
+              "joinWith": "",
+              "fallback": "SHOT ON"
+            },
+            "style": {
+              "font": "sans",
+              "weight": 850,
+              "size": {
+                "designPx": 18,
+                "minPx": 14
+              },
+              "color": "rgba(255,255,255,0.92)",
+              "align": "left",
+              "vAlign": "top"
+            }
+          },
+          {
+            "id": "settings",
+            "label": "参数",
+            "bind": {
+              "kind": "settings",
+              "joinWith": " · "
+            },
+            "style": {
+              "font": "sans",
+              "weight": 650,
+              "size": {
+                "designPx": 12,
+                "minPx": 10
+              },
+              "color": "rgba(255,255,255,0.82)",
+              "align": "left",
+              "vAlign": "top"
+            },
+            "hideWhenEmpty": true
+          }
+        ]
+      }
+    }
+  ]
+}

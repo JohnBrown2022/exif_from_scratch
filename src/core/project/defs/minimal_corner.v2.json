@@ -1,0 +1,85 @@
+{
+  "templateId": "minimal_corner",
+  "nodes": [
+    {
+      "id": "tpl_overlay_minimal_corner",
+      "type": "core/text_stack",
+      "props": {
+        "relativeTo": "image",
+        "scaleModel": { "designWidth": 1000, "min": 0.75, "max": 1.15, "basis": "minEdge" },
+        "box": {
+          "left": { "designPx": 30, "minPx": 16 },
+          "right": { "designPx": 30, "minPx": 16 },
+          "top": { "designPx": 30, "minPx": 16 },
+          "bottom": { "designPx": 30, "minPx": 16 }
+        },
+        "direction": "vertical",
+        "gap": { "designPx": 8, "minPx": 6 },
+        "align": "right",
+        "vAlign": "bottom",
+        "items": [
+          {
+            "id": "camera",
+            "label": "相机",
+            "bind": { "kind": "cameraName", "fallback": "无 EXIF" },
+            "style": {
+              "font": "sans",
+              "weight": 650,
+              "size": { "designPx": 24, "minPx": 12 },
+              "color": "rgba(255,255,255,0.92)",
+              "align": "right",
+              "vAlign": "bottom",
+              "shadow": {
+                "color": "rgba(0,0,0,0.55)",
+                "blur": { "designPx": 18, "minPx": 10 },
+                "offsetY": { "designPx": 4, "minPx": 3 }
+              }
+            }
+          },
+          {
+            "id": "secondary",
+            "label": "镜头/参数",
+            "bind": {
+              "kind": "concat",
+              "parts": [{ "kind": "lensName" }, { "kind": "settings" }],
+              "joinWith": " · "
+            },
+            "hideWhenEmpty": true,
+            "style": {
+              "font": "sans",
+              "weight": 500,
+              "size": { "designPx": 22, "minPx": 11 },
+              "color": "rgba(255,255,255,0.92)",
+              "align": "right",
+              "vAlign": "bottom",
+              "shadow": {
+                "color": "rgba(0,0,0,0.55)",
+                "blur": { "designPx": 18, "minPx": 10 },
+                "offsetY": { "designPx": 4, "minPx": 3 }
+              }
+            }
+          },
+          {
+            "id": "date",
+            "label": "日期",
+            "bind": { "kind": "dateTime" },
+            "hideWhenEmpty": true,
+            "style": {
+              "font": "sans",
+              "weight": 650,
+              "size": { "designPx": 24, "minPx": 12 },
+              "color": "rgba(255,255,255,0.92)",
+              "align": "right",
+              "vAlign": "bottom",
+              "shadow": {
+                "color": "rgba(0,0,0,0.55)",
+                "blur": { "designPx": 18, "minPx": 10 },
+                "offsetY": { "designPx": 4, "minPx": 3 }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

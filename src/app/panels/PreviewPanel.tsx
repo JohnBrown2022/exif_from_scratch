@@ -1,24 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ui from './Panels.module.css';
 import {
+  renderProject,
   decodeImage,
-  getTemplateById,
   inferMakerLogoKey,
   loadMakerLogo,
   readRotation,
-  renderWatermark,
+  type CanvasBackground,
   type CanvasRotation,
   type DecodedImage,
   type ExifData,
   type ExportFormat,
   type JpegBackgroundMode,
-  type TemplateId,
-  type TopologyWatermarkRenderOptions,
+  type ProjectJsonV2,
 } from '../../core';
 
 type Props = {
   file: File | null;
-  templateId: TemplateId;
+  project: ProjectJsonV2;
   renderRevision: number;
   exif: ExifData | null;
   exifError: string | null;
@@ -27,7 +26,10 @@ type Props = {
   jpegBackgroundMode: JpegBackgroundMode;
   blurRadius: number;
   exportFormat: ExportFormat;
-  topologyWatermark: TopologyWatermarkRenderOptions | null;
+  seeds: {
+    fileMd5: string | null;
+    fallback: string;
+  };
 };
 
 function getPreviewSize(width: number, height: number, maxEdge: number) {
@@ -49,9 +51,26 @@ type LoadedImage = {
   orientedHeight: number;
 };
 
+const PREVIEW_DECODE_CACHE_SIZE = 3;
+const previewCache = new Map<string, Omit<LoadedImage, 'fileKey'>>();
+const previewInFlight = new Map<string, Promise<Omit<LoadedImage, 'fileKey'>>>();
+
+function setCachedPreview(fileKey: string, data: Omit<LoadedImage, 'fileKey'>) {
+  previewCache.delete(fileKey);
+  previewCache.set(fileKey, data);
+
+  if (previewCache.size <= PREVIEW_DECODE_CACHE_SIZE) return;
+
+  const oldest = previewCache.keys().next().value;
+  if (!oldest) return;
+  const oldestData = previewCache.get(oldest);
+  if (oldestData) oldestData.decoded.close();
+  previewCache.delete(oldest);
+}
+
 export default function PreviewPanel({
   file,
-  templateId,
+  project,
   renderRevision,
   exif,
   exifError,
@@ -60,7 +79,7 @@ export default function PreviewPanel({
   jpegBackgroundMode,
   blurRadius,
   exportFormat,
-  topologyWatermark,
+  seeds,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -81,7 +100,6 @@ export default function PreviewPanel({
 
   useEffect(() => {
     let cancelled = false;
-    let decoded: DecodedImage | null = null;
 
     const canvas = canvasRef.current;
     setLoaded(null);
@@ -100,22 +118,50 @@ export default function PreviewPanel({
       }
 
       const fileKey = getFileKey(file);
+      const cached = previewCache.get(fileKey);
+      if (cached) {
+        previewCache.delete(fileKey);
+        previewCache.set(fileKey, cached);
+        setLoaded({ fileKey, ...cached });
+        setIsDecoding(false);
+        return;
+      }
+
       setIsDecoding(true);
-      const [nextDecoded, rotation] = await Promise.all([decodeImage(file), readRotation(file)]);
-      decoded = nextDecoded;
+
+      const inFlight = previewInFlight.get(fileKey);
+      const next = inFlight
+        ? await inFlight
+        : await (async () => {
+            const request = (async () => {
+              const [nextDecoded, rotation] = await Promise.all([decodeImage(file), readRotation(file)]);
+
+              const orientedWidth =
+                rotation?.canvas && rotation.dimensionSwapped ? nextDecoded.height : nextDecoded.width;
+              const orientedHeight =
+                rotation?.canvas && rotation.dimensionSwapped ? nextDecoded.width : nextDecoded.height;
+
+              return {
+                decoded: nextDecoded,
+                rotation,
+                orientedWidth,
+                orientedHeight,
+              };
+            })();
+            previewInFlight.set(fileKey, request);
+            try {
+              const result = await request;
+              return result;
+            } finally {
+              previewInFlight.delete(fileKey);
+            }
+          })();
+      setCachedPreview(fileKey, next);
 
       try {
         if (cancelled) return;
-
-        const orientedWidth =
-          rotation?.canvas && rotation.dimensionSwapped ? decoded.height : decoded.width;
-        const orientedHeight =
-          rotation?.canvas && rotation.dimensionSwapped ? decoded.width : decoded.height;
-
-        setLoaded({ fileKey, decoded, rotation, orientedWidth, orientedHeight });
+        setLoaded({ fileKey, ...next });
       } catch (err) {
-        decoded.close();
-        decoded = null;
         throw err;
       } finally {
         if (!cancelled) setIsDecoding(false);
@@ -130,7 +176,6 @@ export default function PreviewPanel({
 
     return () => {
       cancelled = true;
-      decoded?.close();
     };
   }, [file]);
 
@@ -172,23 +217,33 @@ export default function PreviewPanel({
 
     try {
       const previewSize = getPreviewSize(loaded.orientedWidth, loaded.orientedHeight, 1200);
-      const template = getTemplateById(templateId);
 
-      renderWatermark({
+      const background: CanvasBackground =
+        exportFormat === 'jpeg'
+          ? jpegBackgroundMode === 'blur'
+            ? { mode: 'blur', blurRadius, darken: 0.15 }
+            : { mode: 'color', color: jpegBackground }
+          : { mode: 'none' };
+
+      const projectToRender: ProjectJsonV2 = { ...project, canvas: { ...project.canvas, background } };
+
+      renderProject({
         canvas,
-        image: loaded.decoded.source,
-        imageWidth: loaded.decoded.width,
-        imageHeight: loaded.decoded.height,
-        outputWidth: previewSize.width,
-        outputHeight: previewSize.height,
-        exif: exif ?? {},
-        template,
-        background: exportFormat === 'jpeg' ? jpegBackground : undefined,
-        backgroundMode: exportFormat === 'jpeg' ? jpegBackgroundMode : undefined,
-        blurRadius: exportFormat === 'jpeg' ? blurRadius : undefined,
-        rotation: loaded.rotation,
-        makerLogo,
-        topologyWatermark,
+        project: projectToRender,
+        env: {
+          canvas: { width: previewSize.width, height: previewSize.height },
+          image: {
+            source: loaded.decoded.source,
+            width: loaded.decoded.width,
+            height: loaded.decoded.height,
+            rotation: loaded.rotation,
+          },
+          exif: exif ?? {},
+          makerLogo,
+          seeds,
+        },
+        baseWidth: previewSize.width,
+        baseHeight: previewSize.height,
       });
     } catch (err) {
       if (!cancelled) setRenderError(err instanceof Error ? err.message : '预览渲染失败');
@@ -210,8 +265,8 @@ export default function PreviewPanel({
     loaded,
     makerLogo,
     renderRevision,
-    templateId,
-    topologyWatermark,
+    project,
+    seeds,
   ]);
 
   return (

@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 
 import {
   DEFAULT_TOPOLOGY_WATERMARK_SETTINGS,
+  createLegacyProjectV2,
   WATERMARK_TEMPLATES,
   type ExportFormat,
   type JpegBackgroundMode,
+  type ProjectJsonV2,
   type TemplateId,
   type TopologyWatermarkSettings,
 } from '../../core';
@@ -20,6 +22,7 @@ export type PresetPayload = {
   blurRadius: number;
   topologyWatermark: TopologyWatermarkSettings;
   templateOverrides?: TemplateOverride | null;
+  project?: ProjectJsonV2 | null;
 };
 
 export type PresetSlot = {
@@ -35,7 +38,6 @@ type PresetSlotsV1 = {
 
 const STORAGE_KEY = 'presetSlots:v1';
 const SEED_MARK_KEY = 'presetSlotsSeeded:v1';
-const SLOTS_COUNT = 10;
 const ALLOWED_TEMPLATE_IDS = WATERMARK_TEMPLATES.map((t) => t.id);
 const BUILTIN_PRESETS_URL = `${import.meta.env.BASE_URL}exif-watermark-presets.json`;
 
@@ -49,6 +51,7 @@ const DEFAULT_PAYLOAD: PresetPayload = {
   blurRadius: 30,
   topologyWatermark: DEFAULT_TOPOLOGY_WATERMARK_SETTINGS,
   templateOverrides: null,
+  project: null,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -103,9 +106,38 @@ function sanitizeTopologyWatermarkSettings(raw: unknown): TopologyWatermarkSetti
   };
 }
 
+function sanitizeProjectJsonV2(raw: unknown): ProjectJsonV2 | null {
+  if (!isRecord(raw)) return null;
+  if (raw.version !== '2.0') return null;
+  const canvas = raw.canvas;
+  if (!isRecord(canvas)) return null;
+  const mode = canvas.mode;
+  if (mode !== 'template' && mode !== 'fixed_size') return null;
+  if (mode === 'template') {
+    const templateId = sanitizeTemplateId(canvas.templateId);
+    const background = isRecord(canvas.background) ? (canvas.background as ProjectJsonV2['canvas']['background']) : undefined;
+    return { ...(raw as ProjectJsonV2), canvas: { mode: 'template', templateId, background } };
+  }
+  const width = asFiniteNumber(canvas.width);
+  const height = asFiniteNumber(canvas.height);
+  if (typeof width !== 'number' || typeof height !== 'number') return null;
+  return raw as ProjectJsonV2;
+}
+
 function sanitizePayload(raw: unknown): PresetPayload {
   const base = DEFAULT_PAYLOAD;
-  if (!isRecord(raw)) return base;
+  if (!isRecord(raw)) {
+    return {
+      ...base,
+      project: createLegacyProjectV2({
+        templateId: base.templateId,
+        background: base.jpegBackground,
+        backgroundMode: base.jpegBackgroundMode,
+        blurRadius: base.blurRadius,
+        topologyWatermark: base.topologyWatermark,
+      }),
+    };
+  }
 
   const templateId = sanitizeTemplateId(raw.templateId);
   const exportFormat = asEnum(raw.exportFormat, ['jpeg', 'png'] as const) ?? base.exportFormat;
@@ -129,6 +161,16 @@ function sanitizePayload(raw: unknown): PresetPayload {
   // The overrides system already sanitizes on load via loadTemplateOverride.
   const templateOverrides = isRecord(raw.templateOverrides) ? (raw.templateOverrides as TemplateOverride) : null;
 
+  const project =
+    sanitizeProjectJsonV2(raw.project) ??
+    createLegacyProjectV2({
+      templateId,
+      background: jpegBackground,
+      backgroundMode: jpegBackgroundMode,
+      blurRadius,
+      topologyWatermark,
+    });
+
   return {
     templateId,
     exportFormat,
@@ -139,6 +181,7 @@ function sanitizePayload(raw: unknown): PresetPayload {
     blurRadius,
     topologyWatermark,
     templateOverrides,
+    project,
   };
 }
 
@@ -155,8 +198,17 @@ function sanitizeSlot(index: number, raw: unknown): PresetSlot | null {
   return { name, updatedAt, payload };
 }
 
+function normalizeSlots(slots: Array<PresetSlot | null>): Array<PresetSlot | null> {
+  const next = [...slots];
+  while (next.length > 0 && next[next.length - 1] === null) {
+    next.pop();
+  }
+  next.push(null);
+  return next;
+}
+
 function defaultSlots(): Array<PresetSlot | null> {
-  return Array.from({ length: SLOTS_COUNT }, () => null);
+  return [null];
 }
 
 function sanitizeSlotsFile(raw: unknown): Array<PresetSlot | null> {
@@ -164,11 +216,8 @@ function sanitizeSlotsFile(raw: unknown): Array<PresetSlot | null> {
   if (raw.version !== 1) return defaultSlots();
   if (!Array.isArray(raw.slots)) return defaultSlots();
 
-  const out: Array<PresetSlot | null> = [];
-  for (let i = 0; i < SLOTS_COUNT; i++) {
-    out.push(sanitizeSlot(i, raw.slots[i]));
-  }
-  return out;
+  const out = raw.slots.map((slot, index) => sanitizeSlot(index, slot));
+  return normalizeSlots(out);
 }
 
 function loadFromStorage(): Array<PresetSlot | null> {
@@ -182,12 +231,13 @@ function loadFromStorage(): Array<PresetSlot | null> {
 }
 
 function buildSlotsFile(slots: Array<PresetSlot | null>): PresetSlotsV1 {
-  const normalized = Array.from({ length: SLOTS_COUNT }, (_, i) => slots[i] ?? null);
-  return { version: 1, slots: normalized };
+  return { version: 1, slots: normalizeSlots(slots) };
 }
 
 function mergeSlots(current: Array<PresetSlot | null>, defaults: Array<PresetSlot | null>): Array<PresetSlot | null> {
-  return Array.from({ length: SLOTS_COUNT }, (_, i) => current[i] ?? defaults[i] ?? null);
+  const maxLen = Math.max(current.length, defaults.length);
+  const merged = Array.from({ length: maxLen }, (_, i) => current[i] ?? defaults[i] ?? null);
+  return normalizeSlots(merged);
 }
 
 function parseSeedRevision(value: string | null): number {
@@ -256,7 +306,7 @@ export function usePresetSlots() {
       const existing = next[index];
       const name = existing?.name ?? slotLabel(index);
       next[index] = { name, updatedAt: new Date().toISOString(), payload };
-      return next;
+      return normalizeSlots(next);
     });
   }
 
@@ -276,7 +326,7 @@ export function usePresetSlots() {
     setSlots((prev) => {
       const next = [...prev];
       next[index] = null;
-      return next;
+      return normalizeSlots(next);
     });
   }
 
@@ -288,7 +338,7 @@ export function usePresetSlots() {
   async function importJson(file: File): Promise<{ imported: number; ignored: number }> {
     const text = await file.text();
     const parsed = JSON.parse(text) as unknown;
-    const sourceSlotsLen = isRecord(parsed) && Array.isArray(parsed.slots) ? Math.min(SLOTS_COUNT, parsed.slots.length) : 0;
+    const sourceSlotsLen = isRecord(parsed) && Array.isArray(parsed.slots) ? parsed.slots.length : 0;
 
     const nextSlots = sanitizeSlotsFile(parsed);
     const imported = nextSlots.filter(Boolean).length;

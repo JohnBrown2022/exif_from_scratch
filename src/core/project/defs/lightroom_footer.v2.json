@@ -1,0 +1,128 @@
+{
+  "templateId": "lightroom_footer",
+  "backdropNodes": [],
+  "overlayNodes": [
+    {
+      "id": "tpl_overlay_lightroom_footer_bar_bg",
+      "type": "core/rect",
+      "props": {
+        "zone": "bar",
+        "style": {
+          "fill": {
+            "kind": "linear",
+            "x0": 0,
+            "y0": 0,
+            "x1": 0,
+            "y1": 1,
+            "stops": [
+              {
+                "offset": 0,
+                "color": "rgba(0,0,0,0.05)"
+              },
+              {
+                "offset": 1,
+                "color": "rgba(0,0,0,0.42)"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_lightroom_footer_settings",
+      "type": "core/text",
+      "props": {
+        "zone": "bar",
+        "grid": {
+          "col": 1,
+          "colSpan": 4,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "style": {
+          "font": "sans",
+          "weight": 650,
+          "size": {
+            "designPx": 15,
+            "minPx": 12
+          },
+          "color": "rgba(255,255,255,0.92)",
+          "align": "left",
+          "vAlign": "middle"
+        },
+        "bind": {
+          "kind": "settings",
+          "joinWith": "  ",
+          "fallback": "—"
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_lightroom_footer_center",
+      "type": "core/text",
+      "props": {
+        "zone": "bar",
+        "grid": {
+          "col": 5,
+          "colSpan": 4,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "style": {
+          "font": "sans",
+          "weight": 650,
+          "size": {
+            "designPx": 15,
+            "minPx": 12
+          },
+          "color": "rgba(255,255,255,0.92)",
+          "align": "center",
+          "vAlign": "middle"
+        },
+        "bind": {
+          "kind": "concat",
+          "parts": [
+            {
+              "kind": "cameraName"
+            },
+            {
+              "kind": "lensName"
+            }
+          ],
+          "joinWith": " · ",
+          "fallback": "—"
+        }
+      }
+    },
+    {
+      "id": "tpl_overlay_lightroom_footer_date",
+      "type": "core/text",
+      "props": {
+        "zone": "bar",
+        "grid": {
+          "col": 9,
+          "colSpan": 4,
+          "row": 1,
+          "rowSpan": 12
+        },
+        "style": {
+          "font": "sans",
+          "weight": 650,
+          "size": {
+            "designPx": 15,
+            "minPx": 12
+          },
+          "color": "rgba(255,255,255,0.92)",
+          "align": "right",
+          "vAlign": "middle"
+        },
+        "bind": {
+          "kind": "dateTime"
+        },
+        "condition": {
+          "hideWhenEmpty": true
+        }
+      }
+    }
+  ]
+}

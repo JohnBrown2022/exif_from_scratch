@@ -9,10 +9,10 @@ import {
     buildWatermarkFields,
     clearElementOverride,
     getBuiltinTemplateJson,
+    isNativeV2TemplateId,
     loadTemplateOverride,
     saveTemplateOverride,
     setElementOverride,
-    WATERMARK_TEMPLATES,
     type ElementSpec,
     type ExifData,
     type ExportFormat,
@@ -82,7 +82,6 @@ function uniqueStable<T>(items: T[]): T[] {
 
 type Props = {
     templateId: TemplateId;
-    onTemplateChange: (id: TemplateId) => void;
     onTemplateOverridesChange: () => void;
     hasSelection: boolean;
     exif: ExifData | null;
@@ -248,7 +247,6 @@ function ElementCard({
 
 export function StyleTab({
     templateId,
-    onTemplateChange,
     onTemplateOverridesChange,
     hasSelection,
     exif,
@@ -279,6 +277,7 @@ export function StyleTab({
         .filter(({ el }) => el.type === 'text' && el.bind.kind === 'literal' && (isCustomedTemplate || el.editable?.text));
 
     const [query, setQuery] = useState('');
+    const isNativeV2Template = isNativeV2TemplateId(templateId);
 
     const layoutElements = useMemo(() => {
         if (!templateJson) return [];
@@ -308,8 +307,6 @@ export function StyleTab({
     const hasBgArea = templateHasBackground(templateId);
     const showBgControls = exportFormat === 'jpeg' && hasBgArea;
 
-    const currentTemplate = WATERMARK_TEMPLATES.find((t) => t.id === templateId);
-
     const concatFieldControls = useMemo(() => {
         return flatElements
             .map(({ el }) => el)
@@ -335,17 +332,7 @@ export function StyleTab({
 
     return (
         <>
-            {/* ─── 模板选择 ─── */}
-            <Field label="模板">
-                <select className={ui.control} value={templateId} onChange={(e) => onTemplateChange(e.target.value as TemplateId)}>
-                    {WATERMARK_TEMPLATES.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                </select>
-            </Field>
-            {currentTemplate?.description ? (
-                <div className={ui.hint}>{currentTemplate.description}</div>
-            ) : null}
+            <div className={ui.hint}>模板切换与图层编辑已合并到「图层」Tab。</div>
 
             {isCustomedTemplate ? (
                 <div style={{ marginTop: 4 }}>
@@ -519,8 +506,14 @@ export function StyleTab({
                 </Accordion>
             </div>
 
-            {/* ─── 文案覆盖 ─── */}
-            {editableLiteralTexts.length > 0 ? (
+            {isNativeV2Template ? (
+                <div className={ui.hint} style={{ marginTop: 8 }}>
+                    该模板已迁移到 V2 图层系统：可在「图层」Tab 中查看图层；下面的“文案/组合字段/元素开关/布局微调”属于旧引擎配置，暂不适用。
+                </div>
+            ) : null}
+
+            {/* ─── 文案覆盖（Legacy） ─── */}
+            {!isNativeV2Template && editableLiteralTexts.length > 0 ? (
                 <div className={ui.section}>
                     <div className={ui.sectionTitle}>文案</div>
                     <div className={ui.hint}>覆盖模板中的固定文字，保存在本机浏览器。</div>
@@ -550,8 +543,8 @@ export function StyleTab({
                 </div>
             ) : null}
 
-            {/* ─── 组合字段（拆分控制） ─── */}
-            {concatFieldControls.length > 0 ? (
+            {/* ─── 组合字段（拆分控制 / Legacy） ─── */}
+            {!isNativeV2Template && concatFieldControls.length > 0 ? (
                 <Accordion title={`组合字段（可分别控制）`} defaultOpen={false}>
                     <div className={ui.hint}>适用于“镜头/参数/日期”等组合行；隐藏某一项时仍保持原来的对齐与样式。</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -596,8 +589,8 @@ export function StyleTab({
                 </Accordion>
             ) : null}
 
-            {/* ─── 元素开关（折叠） ─── */}
-            {toggleable.length > 0 ? (
+            {/* ─── 元素开关（Legacy） ─── */}
+            {!isNativeV2Template && toggleable.length > 0 ? (
                 <Accordion title={`元素开关（${toggleable.length}）`} defaultOpen={false}>
                     <div className={ui.hint}>显示/隐藏水印元素。</div>
                     {toggleable.map(({ el, depth }) => {
@@ -657,8 +650,8 @@ export function StyleTab({
                 </Accordion>
             ) : null}
 
-            {/* ─── 布局微调（折叠） ─── */}
-            {templateJson && layoutElements.length > 0 ? (
+            {/* ─── 布局微调（Legacy） ─── */}
+            {!isNativeV2Template && templateJson && layoutElements.length > 0 ? (
                 <Accordion title={`布局微调（${layoutElements.length}）`} defaultOpen={false}>
                     <div className={ui.hint}>
                         调整元素在栅格中的位置与对齐。

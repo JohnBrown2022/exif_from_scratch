@@ -4,9 +4,8 @@ import { readRotation } from '../exif/readRotation';
 import { inferMakerLogoKey, loadMakerLogo } from '../brand/makerLogo';
 import { fingerprintMd5Hex } from '../fingerprint/md5';
 import { decodeImage } from '../image/decodeImage';
-import { renderWatermark } from '../render/renderer';
-import { getTemplateById, type TemplateId } from '../render/templates';
-import type { TopologyWatermarkRenderOptions, TopologyWatermarkSettings } from '../watermark/types';
+import { renderProject } from '../project/pipeline';
+import type { CanvasBackground, ProjectJsonV2 } from '../project/types';
 import { sanitizeFilenameSegment, stripFileExtension } from '../utils/filename';
 
 export type ExportFormat = 'png' | 'jpeg';
@@ -17,12 +16,21 @@ export type ExportOptions = {
   format: ExportFormat;
   jpegQuality: number;
   maxEdge: number | 'original';
-  templateId: TemplateId;
+  project: ProjectJsonV2;
   jpegBackground: string;
   jpegBackgroundMode: JpegBackgroundMode;
   blurRadius: number;
-  topologyWatermark?: TopologyWatermarkSettings;
 };
+
+function shouldComputeTopologyMd5(project: ProjectJsonV2): boolean {
+  const nodes = Array.isArray(project.nodes) ? project.nodes : [];
+  const node = nodes.find((n) => n.id === 'topology_mountain' && n.type === 'plugin/topology_mountain');
+  if (!node) return false;
+  if (node.enabled === false) return false;
+  const props = typeof node.props === 'object' && node.props ? (node.props as Record<string, unknown>) : {};
+  const seedMode = props.seedMode;
+  return seedMode === 'file_md5' || seedMode === undefined;
+}
 
 function getOutputSize(width: number, height: number, maxEdge: number | 'original') {
   if (maxEdge === 'original') return { width, height };
@@ -55,10 +63,7 @@ export async function exportWatermarkedImage(
 ): Promise<{ blob: Blob; filename: string; exif: ExifData; exifError: string | null }> {
   const fallbackSeed = `${file.name}:${file.size}:${file.lastModified}`;
 
-  const md5Promise =
-    options.topologyWatermark?.enabled && options.topologyWatermark.seedMode === 'file_md5'
-      ? fingerprintMd5Hex(file).catch(() => null)
-      : Promise.resolve(null);
+  const md5Promise = shouldComputeTopologyMd5(options.project) ? fingerprintMd5Hex(file).catch(() => null) : Promise.resolve(null);
 
   const [decoded, exifResult, rotation] = await Promise.all([
     decodeImage(file),
@@ -80,51 +85,37 @@ export async function exportWatermarkedImage(
 
     const mime = options.format === 'png' ? 'image/png' : 'image/jpeg';
     const quality = options.format === 'jpeg' ? options.jpegQuality : undefined;
-    const background = options.format === 'jpeg' ? options.jpegBackground : undefined;
-    const backgroundMode = options.format === 'jpeg' ? options.jpegBackgroundMode : undefined;
-    const blurRadius = options.format === 'jpeg' ? options.blurRadius : undefined;
-    const template = getTemplateById(options.templateId);
 
     const fileMd5 = await md5Promise;
-    let topologyWatermark: TopologyWatermarkRenderOptions | null = null;
-    if (options.topologyWatermark?.enabled) {
-      const wm = options.topologyWatermark;
-      const manualSeed = wm.manualSeed.trim();
-      const seed = wm.seedMode === 'manual' ? manualSeed || fallbackSeed : fileMd5 || fallbackSeed;
-      topologyWatermark = {
-        enabled: true,
-        seed,
-        positionMode: wm.positionMode,
-        x: wm.x,
-        y: wm.y,
-        size: wm.size,
-        density: wm.density,
-        noise: wm.noise,
-        alpha: wm.alpha,
-      };
-    }
 
-    renderWatermark({
+    const background: CanvasBackground =
+      options.format === 'jpeg'
+        ? options.jpegBackgroundMode === 'blur'
+          ? { mode: 'blur', blurRadius: options.blurRadius, darken: 0.15 }
+          : { mode: 'color', color: options.jpegBackground }
+        : { mode: 'none' };
+
+    const projectToRender: ProjectJsonV2 = { ...options.project, canvas: { ...options.project.canvas, background } };
+
+    renderProject({
       canvas,
-      image: decoded.source,
-      imageWidth: decoded.width,
-      imageHeight: decoded.height,
-      outputWidth: outW,
-      outputHeight: outH,
-      exif: exifResult.exif,
-      template,
-      background,
-      backgroundMode,
-      blurRadius,
-      rotation,
-      makerLogo,
-      topologyWatermark,
+      project: projectToRender,
+      env: {
+        canvas: { width: outW, height: outH },
+        image: { source: decoded.source, width: decoded.width, height: decoded.height, rotation },
+        exif: exifResult.exif,
+        makerLogo,
+        seeds: { fileMd5, fallback: fallbackSeed },
+      },
+      baseWidth: outW,
+      baseHeight: outH,
     });
 
     const blob = await canvasToBlob(canvas, mime, quality);
 
     const base = sanitizeFilenameSegment(stripFileExtension(file.name) || 'export');
-    const filename = `${base}_wm_${options.templateId}.${extensionFor(options.format)}`;
+    const templateId = options.project.canvas.mode === 'template' ? options.project.canvas.templateId : 'project';
+    const filename = `${base}_wm_${templateId}.${extensionFor(options.format)}`;
 
     return { blob, filename, exif: exifResult.exif, exifError: exifResult.error };
   } finally {
