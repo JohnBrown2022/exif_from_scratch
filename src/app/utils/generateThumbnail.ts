@@ -13,7 +13,21 @@ export async function generateThumbnailUrl(
     const width = Math.max(1, Math.round(bitmap.width * scale));
     const height = Math.max(1, Math.round(bitmap.height * scale));
 
-    const canvas = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    if (typeof OffscreenCanvas !== 'undefined') {
+      const canvas = new OffscreenCanvas(width, height);
+      const context = canvas.getContext('2d');
+      if (!context) {
+        return URL.createObjectURL(file);
+      }
+
+      context.drawImage(bitmap, 0, 0, width, height);
+
+      const blob = await canvas.convertToBlob({ type: 'image/webp', quality });
+      if (!blob) return URL.createObjectURL(file);
+      return URL.createObjectURL(blob);
+    }
+
+    const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
 
@@ -23,12 +37,6 @@ export async function generateThumbnailUrl(
     }
 
     context.drawImage(bitmap, 0, 0, width, height);
-
-    if (canvas instanceof OffscreenCanvas) {
-      const blob = await canvas.convertToBlob({ type: 'image/webp', quality });
-      if (!blob) return URL.createObjectURL(file);
-      return URL.createObjectURL(blob);
-    }
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
