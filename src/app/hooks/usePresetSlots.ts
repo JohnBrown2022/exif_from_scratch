@@ -234,9 +234,23 @@ function buildSlotsFile(slots: Array<PresetSlot | null>): PresetSlotsV1 {
   return { version: 1, slots: normalizeSlots(slots) };
 }
 
-function mergeSlots(current: Array<PresetSlot | null>, defaults: Array<PresetSlot | null>): Array<PresetSlot | null> {
+function mergeSlots(
+  current: Array<PresetSlot | null>,
+  defaults: Array<PresetSlot | null>,
+  options?: { replaceByNameAt?: number[] },
+): Array<PresetSlot | null> {
+  const replaceAt = new Set(options?.replaceByNameAt ?? []);
   const maxLen = Math.max(current.length, defaults.length);
-  const merged = Array.from({ length: maxLen }, (_, i) => current[i] ?? defaults[i] ?? null);
+  const merged = Array.from({ length: maxLen }, (_, i) => {
+    const currentSlot = current[i] ?? null;
+    const defaultSlot = defaults[i] ?? null;
+    if (!currentSlot) return defaultSlot;
+    if (!defaultSlot) return currentSlot;
+    if (replaceAt.has(i) && currentSlot.name.trim() === defaultSlot.name.trim()) {
+      return defaultSlot;
+    }
+    return currentSlot;
+  });
   return normalizeSlots(merged);
 }
 
@@ -273,7 +287,12 @@ export function usePresetSlots() {
         const hasBuiltin = builtinSlots.some(Boolean);
         if (!hasBuiltin) return;
         if (cancelled) return;
-        setSlots((prev) => mergeSlots(prev, builtinSlots));
+        const enforceLensAndDateOffForBuiltin = seededRevision < 4 && builtinRevision >= 4;
+        setSlots((prev) =>
+          mergeSlots(prev, builtinSlots, {
+            replaceByNameAt: enforceLensAndDateOffForBuiltin ? [0, 1] : [],
+          }),
+        );
         try {
           localStorage.setItem(SEED_MARK_KEY, String(builtinRevision));
         } catch {
